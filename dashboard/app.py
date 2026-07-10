@@ -66,8 +66,8 @@ if page == "Vue d'ensemble":
     c1.metric("Visiteurs sur 3 jours", f"{len(visiteurs):,}".replace(",", " "))
     c2.metric("Pic d'affluence", int(affluence["nb_visiteurs"].max()),
               help="Maximum atteint sur une scène et un créneau")
-    c3.metric("Anomalies détectées", len(anomalies), f"{hautes} gravité haute",
-              delta_color="inverse")
+    c3.metric("Anomalies détectées", len(anomalies), f"dont {hautes} de gravité haute",
+              delta_color="off")
     c4.metric("Erreur de prévision (MAE)", f"{metriques['mae_lineaire'][0]:.0f} visiteurs",
               f"R2 = {metriques['r2_lineaire'][0]:.2f}", delta_color="off")
     c5.metric("Couverture des besoins", f"{ajustee['couverture'].mean():.0%}",
@@ -98,7 +98,7 @@ if page == "Vue d'ensemble":
         fig2.update_traces(marker_line_width=0)
         st.plotly_chart(style_fig(fig2), width="stretch")
 
-    st.caption("Pipeline : simulation à événements discrets, prévision (forêt aléatoire), "
+    st.caption("Pipeline : simulation à événements discrets, prévision (régression linéaire), "
                "détection (règles + Isolation Forest), allocation (programmation linéaire), "
                "scénarios (rejeu Monte Carlo).")
 
@@ -293,13 +293,16 @@ elif page == "Allocation":
     figee = charge("allocation_figee")
     ajustee = charge("allocation_ajustee")
 
+    pct_initiale = round(initiale["couverture"].mean() * 100, 1)
+    pct_figee = round(figee["couverture"].mean() * 100, 1)
+    pct_ajustee = round(ajustee["couverture"].mean() * 100, 1)
     c1, c2, c3 = st.columns(3)
-    c1.metric("Besoins prévus couverts", f"{initiale['couverture'].mean():.1%}",
+    c1.metric("Besoins prévus couverts", f"{pct_initiale:.1f} %",
               "allocation initiale", delta_color="off")
-    c2.metric("Besoins ajustés, allocation figée", f"{figee['couverture'].mean():.1%}",
+    c2.metric("Besoins ajustés, allocation figée", f"{pct_figee:.1f} %",
               "sans réaction aux anomalies", delta_color="off")
-    c3.metric("Besoins ajustés après réallocation", f"{ajustee['couverture'].mean():.1%}",
-              f"+{ajustee['couverture'].mean() - figee['couverture'].mean():.1%} de couverture")
+    c3.metric("Besoins ajustés après réallocation", f"{pct_ajustee:.1f} %",
+              f"+{pct_ajustee - pct_figee:.1f} pts de couverture")
 
     type_choisi = st.selectbox("Type d'équipe", sorted(initiale["type"].unique()))
     df = ajustee[ajustee["type"] == type_choisi].sort_values("creneau").copy()
@@ -313,7 +316,7 @@ elif page == "Allocation":
     fig.update_traces(marker_line=dict(width=1, color="#0d0d0d"))
     st.plotly_chart(style_fig(fig), width="stretch")
 
-    st.subheader("Besoin et alloué par scène (cumul jour 3)")
+    st.subheader("Besoin et alloué par scène (cumul de la journée)")
     resume = df.groupby("nom")[["besoin", "alloue"]].sum().reset_index()
     fig2 = go.Figure()
     fig2.add_trace(go.Bar(x=resume["nom"], y=resume["besoin"], name="Besoin",
@@ -365,9 +368,13 @@ elif page == "Scénarios":
     c3.metric("Pic d'occupation", f"{meilleur['pic_occupation']:.2f}",
               f"{meilleur['pic_occupation'] - base['pic_occupation']:+.2f} vs base",
               delta_color="inverse")
-    c4.metric("Coût du personnel", f"{meilleur['cout_personnel']:,.0f} EUR".replace(",", " "),
-              f"{meilleur['cout_personnel'] - base['cout_personnel']:+,.0f} vs base".replace(",", " "),
-              delta_color="inverse")
+    ecart_cout = meilleur["cout_personnel"] - base["cout_personnel"]
+    if abs(ecart_cout) < 1:
+        c4.metric("Coût du personnel", f"{meilleur['cout_personnel']:,.0f} EUR".replace(",", " "),
+                  "identique à la base", delta_color="off")
+    else:
+        c4.metric("Coût du personnel", f"{meilleur['cout_personnel']:,.0f} EUR".replace(",", " "),
+                  f"{ecart_cout:+,.0f} vs base".replace(",", " "), delta_color="inverse")
 
     gauche, droite = st.columns(2)
     with gauche:

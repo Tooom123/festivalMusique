@@ -3,14 +3,15 @@
 
 # Plan de soutenance — 10 minutes
 
-Support : dashboard Streamlit en direct (lancer `streamlit run dashboard/app.py` avant
-de passer) + ces repères de temps. Prévoir un export PDF des captures en secours.
+Support : le site web en direct (ouvrir `site/index.html` avant de passer —
+fonctionne hors-ligne, aucune installation nécessaire). Plans de secours : dashboard
+Streamlit (`streamlit run dashboard/app.py`, mêmes données) puis export PDF des captures.
 
 ## Déroulé
 
 | Temps | Qui | Contenu |
 |---|---|---|
-| 0:00 – 1:00 | Membre 1 | Contexte : festival vendredi 4 - dimanche 6 septembre 2026, 3 scènes (Rap 25 000, DJ 20 000, Rock 5 000 places), capacité max 50 000 personnes/jour, samedi le plus fréquenté (~49 600 vs ~38 000), line-up de 48 artistes avec rotation 2 scènes actives sur 3, les 4 problématiques du sujet — page « Programmation » pour poser le décor |
+| 0:00 – 1:00 | Membre 1 | Contexte : festival vendredi 4 - dimanche 6 septembre 2026, 3 scènes (Rap 25 000, DJ 20 000, Rock 5 000 places), capacité max 50 000 personnes/jour, samedi le plus fréquenté (~49 600 vs ~38 000), line-up de 48 artistes avec rotation 2 scènes actives sur 3, les 4 problématiques du sujet — **ouvrir le site sur l'accueil** : têtes d'affiche et chiffres clés posent le décor, puis page « Programmation » |
 | 1:00 – 2:30 | Membre 2 | Données et simulation : schéma des données, simulation à événements discrets (les flux émergent des choix des visiteurs, aucun plafond dur sur les scènes), incidents injectés comme vérité terrain — **lancer le replay animé sur la page « Carte du site »** : la journée se rejoue sous les yeux du jury, cliquer sur une scène (programme) et un stand (menu) |
 | 2:30 – 4:00 | Membre 3 | Prévision : régression linéaire vs forêt aléatoire vs naïf (MAE 1 678 vs 1 986 vs 2 662, R² 0.76), choix justifié par expérimentation (avec 2 jours d'historique la forêt sur-apprend), importance des variables — page « Prévisions » |
 | 4:00 – 5:30 | Membre 4 | Détection : approche hybride règles + Isolation Forest, rappel 6/6 sur les mouvements de foule injectés, pannes toutes remontées — page « Anomalies » |

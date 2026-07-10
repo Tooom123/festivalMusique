@@ -1,0 +1,21 @@
+Photos des artistes (optionnel)
+================================
+
+Deposer ici des photos au format .jpg, nommees d'apres l'artiste
+(minuscules, sans accents, espaces remplaces par des tirets).
+Le site les detecte automatiquement ; sans photo, une carte stylisee
+aux couleurs du genre musical s'affiche a la place.
+
+Tetes d'affiche mises en avant sur la page d'accueil :
+
+  gims.jpg
+  muse.jpg
+  fisher.jpg
+  niska.jpg
+  david-guetta.jpg
+  petit-biscuit.jpg
+  dj-snake.jpg
+  ninho.jpg
+  queens-of-the-stone-age.jpg
+
+Format conseille : environ 800x600, poids < 300 Ko.

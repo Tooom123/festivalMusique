@@ -29,27 +29,50 @@ Le pipeline enchaîne les 5 modules et sauvegarde toutes les données dans `data
 12 rejeux de simulation pour la comparaison de scénarios), résultats reproductibles
 (graine fixe).
 
-## Dashboard
+## Site web (restitution principale)
+
+Ouvrir `site/index.html` dans un navigateur, ou pour un service propre :
+
+```
+cd site
+python -m http.server 8000
+```
+
+puis aller sur http://localhost:8000. Aucune connexion internet nécessaire
+(bibliothèque de graphiques et polices embarquées).
+
+9 pages via le menu latéral : vue d'ensemble (têtes d'affiche, chiffres clés),
+programmation (line-up des 48 artistes), carte du site avec replay animé de la
+journée (affluence, anomalies, flux de foule, stands cliquables), affluence,
+prévisions, anomalies, allocation, recommandations, scénarios.
+
+Les données du site sont générées par le pipeline (`site/donnees.js`, régénéré à
+chaque exécution de `run_pipeline.py` ou via `python exporte_site.py`) : ce sont
+exactement les mêmes que dans la base SQLite.
+
+Les photos des têtes d'affiche peuvent être déposées dans `site/photos/`
+(voir `site/photos/LISEZMOI.txt`) ; sans photo, une carte stylisée s'affiche.
+
+## Dashboard Streamlit (secours)
 
 ```
 .venv\Scripts\streamlit run dashboard/app.py
 ```
 
-9 pages : vue d'ensemble, programmation (line-up des 48 artistes), carte du site avec
-replay animé de la journée (affluence, anomalies, flux de foule, stands et points
-d'intérêt), affluence, prévisions, anomalies, allocation, recommandations générées
-automatiquement, scénarios.
+Conservé comme plan B pour la démo : mêmes données, mêmes pages.
 
 ## Structure du projet
 
 ```
 run_pipeline.py          orchestration bout-en-bout
+exporte_site.py          export des données vers le site web
 data_generation/         génération des données + simulation à événements discrets
 forecasting/             prévision de l'affluence (régression linéaire vs forêt aléatoire)
 anomaly_detection/       détection d'anomalies (règles + Isolation Forest)
 allocation/              allocation des ressources (programmation linéaire)
 scenario_simulation/     comparaison de scénarios d'organisation (Monte Carlo)
-dashboard/               restitution Streamlit
+site/                    site web de restitution (HTML/CSS/JS + ECharts, hors-ligne)
+dashboard/               dashboard Streamlit de secours
 docs/                    documentation technique + plan de soutenance
 SUIVI_PROJET.md          organisation et suivi du projet
 ```

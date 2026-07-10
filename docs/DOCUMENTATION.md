@@ -160,16 +160,29 @@ du module de détection.
 - Scénarios comparés : base, scènes DJ et Rock agrandies, horaires décalés entre
   scènes, sécurité renforcée.
 
-### 4.5 Restitution — dashboard Streamlit
+### 4.5 Restitution — site web dédié
 
-- 9 pages organisées comme un poste de commandement : synthèse, programmation
-  (line-up), carte du site, affluence, prévisions, anomalies, allocation,
-  recommandations, scénarios.
+- La restitution principale est un **site web autonome** (`site/`, HTML/CSS/JS +
+  ECharts, aucune dépendance réseau : bibliothèque de graphiques et polices
+  embarquées), présenté comme le site public du festival : page d'accueil avec les
+  têtes d'affiche des 3 jours, puis les pages d'analyse accessibles par le menu
+  latéral (9 pages : accueil, programmation, carte du site, affluence, prévisions,
+  anomalies, allocation, recommandations, scénarios).
+- **Les données sont strictement identiques au pipeline** : `exporte_site.py` lit la
+  base SQLite produite par `run_pipeline.py` et génère `site/donnees.js` ; aucune
+  valeur n'est ressaisie à la main. L'export est rejoué automatiquement à chaque
+  exécution du pipeline. Le dashboard Streamlit est conservé comme solution de
+  secours pour la démonstration.
+- Justification du choix : Streamlit est idéal pour prototyper mais impose sa mise
+  en page ; un site statique donne un rendu maîtrisé, se lance sans serveur
+  (double-clic sur `index.html`) et fonctionne hors-ligne le jour de la soutenance.
 - **Carte du site animée** : les scènes sont positionnées sur un plan, la taille des
   cercles suit l'affluence, la couleur suit le taux d'occupation (vert < 70 %,
   jaune, orange, rouge > 100 %), les anomalies et les principaux flux de foule
   s'affichent créneau par créneau. Un bouton lecture rejoue la journée entière :
   c'est la matérialisation visuelle de la simulation à événements discrets.
+  Cliquer sur une scène affiche son programme du jour, cliquer sur un stand affiche
+  sa carte (produits et prix).
 - **Recommandations opérationnelles** : un module traduit les sorties chiffrées en
   actions concrètes priorisées (surcharges prévues → limiter les entrées, renforts
   décidés par la réallocation, besoins résiduels non couverts, configuration

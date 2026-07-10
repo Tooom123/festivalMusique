@@ -52,6 +52,12 @@ Rédaction du rapport et préparation de la soutenance : tout le monde, chacun s
   simuler 48 000 visiteurs sur 1 jour) : le pipeline complet reste sous 1min15 malgré
   les 12 rejeux Monte Carlo. Décision assumée : pas de plafond physique dur sur les
   scènes, pour que la surcharge extrême reste possible (documenté en limite).
+- 14/07 : remplacement du Streamlit par un site web dédié (`site/`) comme restitution
+  principale : accueil avec les têtes d'affiche des 3 jours, navigation latérale vers
+  les pages d'analyse, carte animée conservée, tout en HTML/CSS/JS + ECharts embarqué
+  (fonctionne hors-ligne pour la soutenance). Les données sont exportées
+  automatiquement depuis la base SQLite (`exporte_site.py`), strictement identiques
+  au pipeline. Le Streamlit est conservé en plan B pour la démo.
 
 ## Risques identifiés et parades
 

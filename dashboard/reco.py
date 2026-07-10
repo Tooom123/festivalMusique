@@ -1,8 +1,11 @@
-from theme import heure_texte
-
 LIBELLES_TYPES = {"securite": "agents de sécurité", "food": "équipiers food",
                   "sanitaire": "agents sanitaires", "medical": "secouristes",
                   "transport": "agents transport"}
+
+
+def heure_texte(minute):
+    minute = int(minute)
+    return f"{minute // 60:02d}h{minute % 60:02d}"
 
 
 def genere(previsions, scenes, anomalies, initiale, ajustee, synthese):
@@ -35,7 +38,7 @@ def genere(previsions, scenes, anomalies, initiale, ajustee, synthese):
             "gravite": "info",
             "titre": f"+{int(l['delta'])} {LIBELLES_TYPES[l['type']]} réaffectés sur {noms[int(l['scene_id'])]}",
             "detail": "Réallocation déclenchée automatiquement par les anomalies détectées "
-                      "sur cette scène (cumul des créneaux du jour 3).",
+                      "sur cette scène (cumul des créneaux de la journée).",
         })
 
     manques = (fusion[fusion["besoin"] > fusion["alloue"]]

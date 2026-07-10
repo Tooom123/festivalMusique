@@ -95,8 +95,11 @@ def main():
         "scenarios_details": details,
         "scenarios_synthese": synthese,
     })
+    import exporte_site
+    exporte_site.exporte()
+
     print(f"Pipeline termine en {time.time() - debut:.1f}s, donnees sauvegardees dans {DOSSIER}")
-    print("Dashboard : streamlit run dashboard/app.py")
+    print("Site web : ouvrir site/index.html | Dashboard de secours : streamlit run dashboard/app.py")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOVA Festival — 4·5·6 septembre 2026</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<button id="bouton-menu" aria-label="Ouvrir le menu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+</button>
+<div id="voile"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="marque">
+    <div class="logo">NOVA<span>FESTIVAL</span></div>
+    <div class="dates">4 · 5 · 6 septembre 2026</div>
+  </div>
+
+  <nav aria-label="Navigation principale">
+    <button class="nav-item actif" data-page="accueil">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Vue d'ensemble</span>
+    </button>
+    <button class="nav-item" data-page="programmation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <span>Programmation</span>
+    </button>
+    <button class="nav-item" data-page="carte">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+      <span>Carte du site</span>
+    </button>
+    <button class="nav-item" data-page="affluence">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Affluence</span>
+    </button>
+    <button class="nav-item" data-page="previsions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      <span>Prévisions</span>
+    </button>
+    <button class="nav-item" data-page="anomalies">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Anomalies</span>
+    </button>
+    <button class="nav-item" data-page="allocation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Allocation</span>
+    </button>
+    <button class="nav-item" data-page="recommandations">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+      <span>Recommandations</span>
+    </button>
+    <button class="nav-item" data-page="scenarios">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/></svg>
+      <span>Scénarios</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-pied">
+    Système intelligent de gestion<br>
+    Données du pipeline — graine 42
+  </div>
+</aside>
+
+<main id="contenu">
+
+  <section class="page actif" id="page-accueil">
+    <div class="hero">
+      <div class="hero-blobs" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="hero-int">
+        <p class="hero-sur">4 · 5 · 6 septembre 2026 — capacité 50 000 personnes / jour</p>
+        <h1>NOVA<br><span>FESTIVAL</span></h1>
+        <p class="hero-sous">3 scènes. 48 artistes. Un système intelligent qui prévoit l'affluence,
+        détecte les incidents et réalloue les équipes en temps réel.</p>
+        <div class="hero-chips">
+          <span class="chip">Scène Rap — 25 000 places</span>
+          <span class="chip">Scène DJ — 20 000 places</span>
+          <span class="chip">Scène Rock — 5 000 places</span>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="titre-section">Têtes d'affiche</h2>
+    <div class="headliners" id="headliners"></div>
+    <p class="credit-photos">Photos : Wikimedia Commons, licences CC BY / CC BY-SA — détail dans <code>site/photos/CREDITS.md</code></p>
+
+    <h2 class="titre-section">Le festival en chiffres</h2>
+    <div class="grille-kpi" id="kpi-accueil"></div>
+
+    <div class="deux-colonnes">
+      <div class="carte-graph">
+        <h3>Affluence totale du site</h3>
+        <div class="graph" id="graph-affluence-totale"></div>
+      </div>
+      <div class="carte-graph">
+        <h3>Anomalies par jour</h3>
+        <div class="graph" id="graph-anomalies-jour"></div>
+      </div>
+    </div>
+    <p class="note-pipeline">Pipeline : simulation à événements discrets · prévision (régression linéaire) ·
+    détection (règles + Isolation Forest) · allocation (programmation linéaire) · scénarios (rejeu Monte Carlo)</p>
+  </section>
+
+  <section class="page" id="page-programmation">
+    <header class="entete-page">
+      <h1>Programmation</h1>
+      <p>16 sets d'une heure par jour, de 16h à minuit. Deux scènes actives en permanence,
+      la troisième en pause pour le changement de plateau. Les têtes d'affiche clôturent à 23h.</p>
+    </header>
+    <div class="segments" id="seg-prog"></div>
+    <div class="carte-graph">
+      <div class="graph graph-haut" id="graph-gantt"></div>
+    </div>
+    <div class="carte-graph">
+      <h3>Grille horaire</h3>
+      <div class="conteneur-table" id="table-prog"></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-carte">
+    <header class="entete-page">
+      <h1>Carte du site</h1>
+      <p>Taille des cercles : affluence. Couleur : taux d'occupation (vert &lt; 70 %, jaune 70–90 %,
+      orange 90–100 %, rouge &gt; 100 %). Triangles rouges : anomalies. Traits animés : principaux
+      flux de visiteurs. Cliquer sur une scène ou un stand pour le détail. Le bouton lecture rejoue la journée.</p>
+    </header>
+    <div class="barre-outils">
+      <div class="segments" id="seg-carte"></div>
+      <div class="mini-kpis" id="kpi-carte"></div>
+    </div>
+    <div class="carte-graph">
+      <div class="graph graph-carte" id="graph-carte"></div>
+    </div>
+    <div class="carte-graph" id="panneau-detail" hidden>
+      <div class="panneau-tete">
+        <h3 id="detail-titre"></h3>
+        <button class="fermer" id="detail-fermer" aria-label="Fermer le panneau">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="conteneur-table" id="detail-corps"></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-affluence">
+    <header class="entete-page">
+      <h1>Affluence par scène</h1>
+      <p>Fréquentation observée, issue de la simulation à événements discrets.</p>
+    </header>
+    <div class="segments" id="seg-affluence"></div>
+    <div class="carte-graph">
+      <div class="graph" id="graph-affluence-scenes"></div>
+    </div>
+    <div class="carte-graph">
+      <h3>Taux d'occupation</h3>
+      <div class="graph" id="graph-heatmap"></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-previsions">
+    <header class="entete-page">
+      <h1>Prévision de l'affluence — dimanche 6 septembre</h1>
+      <p>Régression linéaire entraînée sur le vendredi et le samedi, comparée à une forêt aléatoire
+      et à un modèle naïf. Avec deux jours d'historique, le modèle linéaire généralise mieux.</p>
+    </header>
+    <div class="grille-kpi" id="kpi-previsions"></div>
+    <div class="segments" id="seg-previsions"></div>
+    <div class="carte-graph">
+      <div class="graph" id="graph-previsions"></div>
+    </div>
+    <div class="carte-graph">
+      <h3>Importance des variables (par permutation)</h3>
+      <div class="graph" id="graph-importances"></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-anomalies">
+    <header class="entete-page">
+      <h1>Anomalies détectées</h1>
+      <p>Règles métier (surcharges, pannes, mouvements de foule) complétées par Isolation Forest.
+      La détection est évaluée contre les incidents injectés dans la simulation.</p>
+    </header>
+    <div class="grille-kpi" id="kpi-anomalies"></div>
+    <div class="segments" id="seg-anomalies"></div>
+    <div class="carte-graph">
+      <div class="graph" id="graph-anomalies"></div>
+    </div>
+    <div class="carte-graph">
+      <h3>Détail des anomalies</h3>
+      <div class="conteneur-table" id="table-anomalies"></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-allocation">
+    <header class="entete-page">
+      <h1>Allocation des ressources — dimanche 6 septembre</h1>
+      <p>Répartition du personnel optimisée par programmation linéaire à partir des prévisions,
+      puis ré-optimisée quand des anomalies sont détectées.</p>
+    </header>
+    <div class="grille-kpi" id="kpi-allocation"></div>
+    <div class="segments" id="seg-allocation"></div>
+    <div class="carte-graph">
+      <div class="graph" id="graph-allocation"></div>
+    </div>
+    <div class="carte-graph">
+      <h3>Besoin et alloué par scène (cumul de la journée)</h3>
+      <div class="graph" id="graph-besoin-alloue"></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-recommandations">
+    <header class="entete-page">
+      <h1>Recommandations</h1>
+      <p>Générées automatiquement à partir des prévisions, des anomalies, de la réallocation
+      et des scénarios simulés.</p>
+    </header>
+    <div id="liste-recos"></div>
+  </section>
+
+  <section class="page" id="page-scenarios">
+    <header class="entete-page">
+      <h1>Comparaison de scénarios d'organisation</h1>
+      <p>Chaque configuration est rejouée 3 fois par la simulation avec des graines différentes,
+      les métriques sont moyennées.</p>
+    </header>
+    <div class="grille-kpi" id="kpi-scenarios"></div>
+    <div class="deux-colonnes">
+      <div class="carte-graph">
+        <h3>Créneaux en surcharge</h3>
+        <div class="graph" id="graph-surcharge"></div>
+      </div>
+      <div class="carte-graph">
+        <h3>Coût du personnel (3 jours)</h3>
+        <div class="graph" id="graph-cout"></div>
+      </div>
+    </div>
+    <div class="carte-graph">
+      <h3>Couverture des besoins — 3 runs par scénario</h3>
+      <div class="graph" id="graph-couverture"></div>
+    </div>
+    <div class="carte-graph">
+      <h3>Synthèse</h3>
+      <div class="conteneur-table" id="table-scenarios"></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="donnees.js"></script>
+<script src="lib/echarts.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
