@@ -303,20 +303,55 @@ function dessineProgrammation(jour) {
 /* ================= Carte du site ================= */
 
 let jourCarte = 2;
+let carte3dApi = null;
+let clicCarte2dLie = false;
 
 function initCarte() {
   creerSegments("seg-carte", [1, 2, 3].map((j) => ({ label: jourLong(j), valeur: j })),
-    (j) => { jourCarte = j; dessineCarte(j); }, 1);
-  dessineCarte(jourCarte);
+    (j) => { jourCarte = j; changeJourCarte(j); }, 1);
 
   document.getElementById("detail-fermer").addEventListener("click", () => {
     document.getElementById("panneau-detail").hidden = true;
   });
 
-  graphe("graph-carte").on("click", (params) => {
-    if (params.seriesId === "scenes") montrerProgrammeScene(params.data.sceneId);
-    if (params.seriesId === "pois") montrerDetailPoi(params.data.poi);
-  });
+  monteCarte(jourCarte);
+}
+
+function monteCarte(jour) {
+  if (window.Carte3D) {
+    try {
+      carte3dApi = Carte3D.monte(document.getElementById("graph-carte"), {
+        donnees: DONNEES,
+        jour,
+        onScene: (id) => montrerProgrammeScene(id),
+        onPoi: (p) => montrerDetailPoi(p),
+      });
+      majInfosCarte(jour);
+      return;
+    } catch (e) {
+      console.error("Carte 3D indisponible, repli sur la carte 2D", e);
+      carte3dApi = null;
+    }
+  }
+  dessineCarte2D(jour);
+}
+
+function changeJourCarte(jour) {
+  if (carte3dApi) {
+    carte3dApi.setJour(jour);
+    majInfosCarte(jour);
+  } else {
+    dessineCarte2D(jour);
+  }
+}
+
+function majInfosCarte(jour) {
+  const aff = DONNEES.affluence.filter((a) => a.jour === jour);
+  const pic = Math.max(...aff.map((a) => a.nb_visiteurs));
+  const nbAnos = DONNEES.anomalies.filter((a) => a.jour === jour).length;
+  document.getElementById("kpi-carte").innerHTML =
+    `<span><b>${fmt(pic)}</b> pic du jour</span><span><b>${nbAnos}</b> anomalies</span>`;
+  document.getElementById("panneau-detail").hidden = true;
 }
 
 function seriesCarte(jour, creneau) {
@@ -369,9 +404,16 @@ function seriesCarte(jour, creneau) {
   ];
 }
 
-function dessineCarte(jour) {
+function dessineCarte2D(jour) {
   const creneaux = creneauxDuJour(jour);
   const g = graphe("graph-carte");
+  if (!clicCarte2dLie) {
+    g.on("click", (params) => {
+      if (params.seriesId === "scenes") montrerProgrammeScene(params.data.sceneId);
+      if (params.seriesId === "pois") montrerDetailPoi(params.data.poi);
+    });
+    clicCarte2dLie = true;
+  }
   g.clear();
   g.setOption({
     baseOption: {
@@ -379,7 +421,7 @@ function dessineCarte(jour) {
         axisType: "category",
         data: creneaux.map(heureTexte),
         autoPlay: false,
-        playInterval: 700,
+        playInterval: 2100,
         loop: false,
         bottom: 4, left: 30, right: 30,
         label: { color: C.axe, fontSize: 10 },
@@ -413,12 +455,7 @@ function dessineCarte(jour) {
     options: creneaux.map((cr) => ({ series: seriesCarte(jour, cr) })),
   }, true);
 
-  const aff = DONNEES.affluence.filter((a) => a.jour === jour);
-  const pic = Math.max(...aff.map((a) => a.nb_visiteurs));
-  const nbAnos = DONNEES.anomalies.filter((a) => a.jour === jour).length;
-  document.getElementById("kpi-carte").innerHTML =
-    `<span><b>${fmt(pic)}</b> pic du jour</span><span><b>${nbAnos}</b> anomalies</span>`;
-  document.getElementById("panneau-detail").hidden = true;
+  majInfosCarte(jour);
 }
 
 function montrerProgrammeScene(sceneId) {

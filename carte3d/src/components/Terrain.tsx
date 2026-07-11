@@ -1,0 +1,63 @@
+import { Html, Line } from "@react-three/drei";
+import { useMemo } from "react";
+import { monde } from "../logique/festival";
+
+// Sol, enceinte du site et portique d'entree. Style sombre type carte de nuit.
+export function Terrain() {
+  const coins = useMemo(() => {
+    const c = [monde(1, 2), monde(99, 2), monde(99, 92), monde(1, 92), monde(1, 2)];
+    return c.map(([x, z]) => [x, 0.06, z] as [number, number, number]);
+  }, []);
+
+  const [ex, ez] = monde(50, 2);
+
+  const herbes = useMemo(
+    () => [
+      { pos: [-46, -38] as const, rayon: 17 },
+      { pos: [47, -42] as const, rayon: 14 },
+      { pos: [-50, 34] as const, rayon: 12 },
+      { pos: [52, 30] as const, rayon: 15 },
+      { pos: [4, -52] as const, rayon: 11 },
+    ],
+    [],
+  );
+
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 4]} receiveShadow>
+        <planeGeometry args={[210, 190]} />
+        <meshStandardMaterial color="#0d1119" roughness={1} metalness={0} />
+      </mesh>
+
+      {herbes.map((h, i) => (
+        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[h.pos[0], 0.02, h.pos[1]]}>
+          <circleGeometry args={[h.rayon, 28]} />
+          <meshStandardMaterial color="#101a14" roughness={1} />
+        </mesh>
+      ))}
+
+      <Line points={coins} color="#5a6788" transparent opacity={0.35} lineWidth={1.5} />
+
+      <group position={[ex, 0, ez]}>
+        {[-5, 5].map((dx) => (
+          <mesh key={dx} position={[dx, 2.6, 0]} castShadow>
+            <boxGeometry args={[0.7, 5.2, 0.7]} />
+            <meshStandardMaterial color="#1c2333" roughness={0.7} />
+          </mesh>
+        ))}
+        <mesh position={[0, 5.4, 0]}>
+          <boxGeometry args={[11.4, 0.9, 0.9]} />
+          <meshStandardMaterial
+            color="#4f7cff"
+            emissive="#4f7cff"
+            emissiveIntensity={1.6}
+            roughness={0.4}
+          />
+        </mesh>
+        <Html position={[0, 7.2, 0]} center distanceFactor={90} zIndexRange={[10, 0]}>
+          <div className="c3d-etiquette c3d-etiquette-entree">Entrée</div>
+        </Html>
+      </group>
+    </group>
+  );
+}

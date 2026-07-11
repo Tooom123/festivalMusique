@@ -42,9 +42,21 @@ puis aller sur http://localhost:8000. Aucune connexion internet nécessaire
 (bibliothèque de graphiques et polices embarquées).
 
 9 pages via le menu latéral : vue d'ensemble (têtes d'affiche, chiffres clés),
-programmation (line-up des 48 artistes), carte du site avec replay animé de la
-journée (affluence, anomalies, flux de foule, stands cliquables), affluence,
-prévisions, anomalies, allocation, recommandations, scénarios.
+programmation (line-up des 48 artistes), carte du site en 3D interactive,
+affluence, prévisions, anomalies, allocation, recommandations, scénarios.
+
+La **carte du site en 3D** rejoue la journée créneau par créneau : scènes modélisées
+avec l'artiste en cours affiché sous l'affluence, foule et flux de visiteurs animés
+selon les données réelles, halo coloré par le taux d'occupation, stands cliquables.
+Un journal d'anomalies s'accumule pendant la lecture (chaque incident daté, marqué
+« en cours » puis « résolu à HHhMM » quand il disparaît). Navigation type carte
+(rotation, zoom, déplacement, recentrage au clic). Repli automatique sur la carte 2D
+si WebGL n'est pas disponible.
+
+La carte 3D est développée en React + TypeScript + Three.js dans `carte3d/`
+(source) et compilée en un bundle autonome `site/lib/carte3d.js` déjà inclus dans
+le dépôt : rien à installer pour utiliser le site. Pour modifier la carte 3D :
+`cd carte3d && npm install && npm run build`.
 
 Les données du site sont générées par le pipeline (`site/donnees.js`, régénéré à
 chaque exécution de `run_pipeline.py` ou via `python exporte_site.py`) : ce sont
@@ -72,6 +84,7 @@ anomaly_detection/       détection d'anomalies (règles + Isolation Forest)
 allocation/              allocation des ressources (programmation linéaire)
 scenario_simulation/     comparaison de scénarios d'organisation (Monte Carlo)
 site/                    site web de restitution (HTML/CSS/JS + ECharts, hors-ligne)
+carte3d/                 source de la carte 3D (React + TypeScript + Three.js)
 dashboard/               dashboard Streamlit de secours
 docs/                    documentation technique + plan de soutenance
 SUIVI_PROJET.md          organisation et suivi du projet

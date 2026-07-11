@@ -32,15 +32,24 @@ generateur.py ──► simulation.py ──► data/festival.db + CSV
                │                             │
                └───────────┬─────────────────┘
                            ▼
-                    dashboard/app.py
+                  exporte_site.py
+                           │
+              ┌────────────┴────────────┐
+              ▼                          ▼
+   site/donnees.js (site web)   dashboard/app.py (Streamlit, secours)
 ```
 
-- **Langage** : Python 3 (écosystème data science : pandas, scikit-learn, PuLP, Streamlit).
+- **Langage** : Python 3 pour tout le pipeline analytique (pandas, scikit-learn, PuLP,
+  Streamlit) ; restitution principale en HTML/CSS/JavaScript + ECharts (`site/`),
+  autonome et sans dépendance réseau.
 - **Stockage** : les données générées sont exportées en CSV (lisibles, diffables) et
-  chargées dans une base SQLite (`data/festival.db`) interrogée par le dashboard.
+  chargées dans une base SQLite (`data/festival.db`). `exporte_site.py` lit cette base
+  et génère `site/donnees.js`, consommé par le site web ; le dashboard Streamlit
+  interroge directement la base SQLite.
 - **Reproductibilité** : toute la génération est pilotée par une graine fixe
   (`GRAINE = 42`) ; relancer le pipeline reproduit exactement les mêmes données.
-  Aucun traitement manuel : le dossier `data/` est entièrement régénéré à chaque exécution.
+  Aucun traitement manuel : le dossier `data/` et `site/donnees.js` sont entièrement
+  régénérés à chaque exécution.
 
 ## 3. Données simulées
 
@@ -176,13 +185,22 @@ du module de détection.
 - Justification du choix : Streamlit est idéal pour prototyper mais impose sa mise
   en page ; un site statique donne un rendu maîtrisé, se lance sans serveur
   (double-clic sur `index.html`) et fonctionne hors-ligne le jour de la soutenance.
-- **Carte du site animée** : les scènes sont positionnées sur un plan, la taille des
-  cercles suit l'affluence, la couleur suit le taux d'occupation (vert < 70 %,
-  jaune, orange, rouge > 100 %), les anomalies et les principaux flux de foule
-  s'affichent créneau par créneau. Un bouton lecture rejoue la journée entière :
-  c'est la matérialisation visuelle de la simulation à événements discrets.
-  Cliquer sur une scène affiche son programme du jour, cliquer sur un stand affiche
-  sa carte (produits et prix).
+- **Carte du site en 3D temps réel** (React + TypeScript + Three.js via React Three
+  Fiber, compilée en un bundle unique `site/lib/carte3d.js`) : le site du festival
+  est modélisé en vue aérienne interactive — scènes avec écrans et faisceaux,
+  chemins, stands, foule instanciée dont la densité suit l'affluence réelle,
+  marcheurs qui matérialisent les flux entre scènes (sens de déplacement visible),
+  halo au sol coloré par le taux d'occupation (vert < 70 %, jaune, orange,
+  rouge > 100 %), marqueurs d'anomalies. Navigation type carte (rotation, zoom,
+  déplacement, recentrage sur une scène au clic) et timeline qui rejoue la journée
+  créneau par créneau : c'est la matérialisation visuelle de la simulation à
+  événements discrets. **Seule la couche d'affichage a changé** : les positions,
+  seuils, formules de taille et de largeur de flux sont portés à l'identique depuis
+  la carte 2D (`carte3d/src/logique/festival.ts`), et les mêmes tables alimentent
+  les deux rendus. Cliquer sur une scène affiche ses statistiques (affluence,
+  évolution, flux entrants/sortants, set en cours) et son programme ; cliquer sur
+  un stand affiche sa carte (produits et prix). En cas d'échec WebGL, la page
+  bascule automatiquement sur l'ancienne carte 2D ECharts, conservée en repli.
 - **Recommandations opérationnelles** : un module traduit les sorties chiffrées en
   actions concrètes priorisées (surcharges prévues → limiter les entrées, renforts
   décidés par la réallocation, besoins résiduels non couverts, configuration
@@ -271,5 +289,11 @@ la gérer une fois qu'elle est là.
 
 ```
 .venv\Scripts\python run_pipeline.py
+```
+
+Régénère les données et `site/donnees.js`. Puis ouvrir `site/index.html` dans un
+navigateur (restitution principale, hors-ligne) — ou, en secours :
+
+```
 .venv\Scripts\streamlit run dashboard/app.py
 ```

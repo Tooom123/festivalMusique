@@ -23,9 +23,15 @@ Rédaction du rapport et préparation de la soutenance : tout le monde, chacun s
 | Jeu 10/07 | Architecture validée, schéma de données, génération + simulation fonctionnelles | Fait |
 | Ven 11/07 | Prévision + détection fonctionnelles, premières métriques | Fait |
 | Sam 12/07 | Allocation + scénarios, intégration pipeline complet, dashboard | Fait |
-| Dim 13/07 | Relecture croisée du code, tests du pipeline, rédaction du rapport | En cours |
-| Lun 14/07 | Finalisation et remise du rapport (veille de soutenance), répétition chronométrée | À faire |
+| Dim 13/07 | Refonte du festival à l'échelle réelle (3 scènes, 50 000 pers./jour) suite à relecture — périmètre élargi au-delà du plan initial | Fait |
+| Lun 14/07 | Site web de restitution (remplace le dashboard comme support principal), corrections de cohérence, rédaction du rapport | Fait |
 | Mar 15/07 | Soutenance (10 min + questions) | À faire |
+
+Le périmètre s'est élargi les 13 et 14/07 (passage à l'échelle réelle, puis site web)
+au-delà de ce que prévoyait le planning initial, qui ne réservait ces deux jours qu'à
+la relecture et la rédaction. Choix assumé : muscler la restitution plutôt que
+s'en tenir au plan initial, en absorbant le travail supplémentaire sans décaler la
+date de soutenance.
 
 ## Points d'avancement
 
@@ -58,12 +64,18 @@ Rédaction du rapport et préparation de la soutenance : tout le monde, chacun s
   (fonctionne hors-ligne pour la soutenance). Les données sont exportées
   automatiquement depuis la base SQLite (`exporte_site.py`), strictement identiques
   au pipeline. Le Streamlit est conservé en plan B pour la démo.
+- 14/07 (soir) : refonte de la carte du site en 3D interactive (React + TypeScript +
+  Three.js, dossier `carte3d/`, compilé en bundle autonome dans `site/lib/`) :
+  terrain, scènes modélisées, foule instanciée, marcheurs sur les chemins, navigation
+  caméra type carte. La logique métier n'a pas bougé : positions, seuils et formules
+  portés à l'identique depuis la carte 2D, qui reste en repli automatique si WebGL
+  n'est pas disponible.
 
 ## Risques identifiés et parades
 
 | Risque | Parade |
 |---|---|
-| Panne de la démo live en soutenance | Export PDF des pages du dashboard en secours |
+| Panne de la démo live en soutenance | Site fonctionne hors-ligne (aucun réseau requis) ; dashboard Streamlit et export PDF des pages en double secours |
 | Dérapage du temps de parole (10 min max) | Répétition chronométrée le 14/07, minutage par membre dans docs/SOUTENANCE.md |
 | Résultats non reproductibles devant le jury | Graine fixe, pipeline en une commande, testé sur machine propre |
 | Membre indisponible en fin de projet | Chaque module documenté dans docs/DOCUMENTATION.md, relecture croisée le 13/07 |
@@ -76,5 +88,5 @@ Rédaction du rapport et préparation de la soutenance : tout le monde, chacun s
 | Gérer | Génération automatisée, CSV + SQLite, graine fixe, git |
 | Concevoir | Justification écrite de chaque choix dans docs/DOCUMENTATION.md §4 |
 | Agir | Répartition ci-dessus, réunions des 10 et 12/07 |
-| Formaliser | Rapport (DOCUMENTATION.md), dashboard, plan de soutenance minuté |
+| Formaliser | Rapport (DOCUMENTATION.md), site web de restitution, plan de soutenance minuté |
 | Piloter | Ce fichier : planning, risques, avancement |
