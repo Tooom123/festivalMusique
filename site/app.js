@@ -168,7 +168,6 @@ function ouvrirDrawer(cle, contexte) {
 
   document.body.classList.add("drawer-ouvert");
   drawer.setAttribute("aria-hidden", "false");
-  document.getElementById("indice-carte").classList.add("masque");
   drawerCorps.scrollTop = 0;
   requestAnimationFrame(() =>
     Object.values(graphs).forEach((g) => { try { g.resize(); } catch (e) {} }));
