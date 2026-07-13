@@ -4,12 +4,12 @@
 export function Lights() {
   return (
     <group>
-      <hemisphereLight args={["#4a2418", "#0a0503", 0.75]} />
-      <ambientLight intensity={0.16} color="#ffb37a" />
+      <hemisphereLight args={["#6a3a24", "#1a0d08", 1.05]} />
+      <ambientLight intensity={0.42} color="#ffd2ad" />
       <directionalLight
         position={[70, 95, 45]}
-        intensity={0.85}
-        color="#ffd0a0"
+        intensity={1.15}
+        color="#ffe6cc"
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-110}

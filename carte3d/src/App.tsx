@@ -99,8 +99,8 @@ export function App({
         camera={{ position: [0, 106, 132], fov: 40, near: 1, far: 900 }}
         onPointerMissed={() => setSelection(null)}
       >
-        <color attach="background" args={["#0a0505"]} />
-        <fog attach="fog" args={["#140a08", 190, 460]} />
+        <color attach="background" args={["#160806"]} />
+        <fog attach="fog" args={["#2a1108", 210, 520]} />
         <FestivalScene
           scenes={scenes}
           flux={flux}
