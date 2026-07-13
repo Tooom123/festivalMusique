@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NOVA Festival — 4·5·6 septembre 2026</title>
+<title>Hellfess — 4·5·6 septembre 2026</title>
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -16,7 +16,7 @@
 
 <aside class="sidebar" id="sidebar">
   <div class="marque">
-    <div class="logo">NOVA<span>FESTIVAL</span></div>
+    <div class="logo">HELLFESS<span>FESTIVAL</span></div>
     <div class="dates">4 · 5 · 6 septembre 2026</div>
   </div>
 
@@ -72,7 +72,7 @@
       <div class="hero-blobs" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="hero-int">
         <p class="hero-sur">5ᵉ édition — 4 · 5 · 6 septembre 2026 — capacité 50 000 personnes / jour</p>
-        <h1>NOVA<br><span>FESTIVAL</span></h1>
+        <h1>HELLFESS<br><span>FESTIVAL</span></h1>
         <p class="hero-sous">3 scènes. 48 artistes. Un système intelligent qui prévoit l'affluence,
         détecte les incidents et réalloue les équipes en temps réel.</p>
         <div class="hero-chips">
@@ -224,26 +224,25 @@
 
   <section class="page" id="page-allocation">
     <header class="entete-page">
-      <h1>Allocation des ressources — dimanche 6 septembre</h1>
+      <h1>Allocation des ressources — les 3 jours</h1>
       <p>Répartition du personnel optimisée par programmation linéaire à partir des prévisions,
-      puis ré-optimisée quand des anomalies sont détectées.</p>
+      puis ré-optimisée quand des anomalies sont détectées. Même méthode appliquée aux trois jours.</p>
     </header>
     <div class="grille-kpi" id="kpi-allocation"></div>
+    <p class="sous-note" style="margin:-6px 0 16px">Couvertures moyennées sur les trois jours. Choisis un
+    jour et un domaine pour voir la répartition détaillée.</p>
+    <div class="segments" id="seg-allocation-jour"></div>
     <div class="segments" id="seg-allocation"></div>
     <div class="carte-graph">
       <div class="graph" id="graph-allocation"></div>
     </div>
-    <div class="carte-graph">
-      <h3>Besoin et alloué par scène (cumul de la journée)</h3>
-      <div class="graph" id="graph-besoin-alloue"></div>
-    </div>
 
     <h2 class="titre-section">Dimensionnement du personnel — combien déployer ?</h2>
-    <p class="sous-note">D'après la prévision d'affluence du <b>dimanche 6 septembre 2026</b>, on connaît
-    le besoin en personnel (via les ratios d'encadrement). Mais faut-il vraiment embaucher 100 % de cet
-    effectif de pointe ? On teste tous les niveaux d'un coup : à chaque niveau, on ré-optimise la
-    répartition sur la journée et on mesure la couverture. En dessous, des créneaux restent à découvert
-    (risque) ; au-dessus, c'est du personnel payé pour rien.</p>
+    <p class="sous-note">D'après la prévision d'affluence des <b>3 jours</b>, on connaît le besoin en
+    personnel (via les ratios d'encadrement). L'effectif de pointe est calé sur le <b>jour le plus
+    chargé</b> (samedi). Mais faut-il vraiment embaucher 100 % de cet effectif&nbsp;? On teste tous les
+    niveaux d'un coup : à chaque niveau, on ré-optimise la répartition et on mesure la couverture. En
+    dessous, des créneaux restent à découvert (risque) ; au-dessus, c'est du personnel payé pour rien.</p>
     <div class="deux-colonnes">
       <div class="carte-graph">
         <h3>Couverture des besoins selon l'effectif déployé</h3>
@@ -306,6 +305,9 @@
     <div class="carte-graph">
       <h3>Couverture des besoins — 3 runs par scénario</h3>
       <div class="graph" id="graph-couverture"></div>
+      <p class="sous-note" style="margin-top:10px">Couverture à effectifs complets, <b>hors anomalies
+      injectées</b> — comparable à la couverture initiale de la page Allocation (~99,6 %), pas à la
+      couverture après réallocation (qui intègre les incidents).</p>
     </div>
     <div class="carte-graph">
       <h3>Synthèse</h3>

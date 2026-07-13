@@ -111,6 +111,21 @@ date de soutenance.
   50 000 personnes (`INSTALLATIONS` : ~24 points resto, ~30 blocs sanitaires, ~6 postes
   de secours) et on affiche l'effectif par installation (~9/stand, ~4/bloc, ~17/poste).
   Aucun calcul touché, la carte reste schématique (note explicite ajoutée).
+- 13/07 (relecture, suite) : l'allocation des ressources couvre désormais **les 3 jours**
+  (elle ne portait que sur le dimanche). Le modèle de prévision opérationnelle est
+  appliqué aux trois jours (même formule), puis l'optimisation par créneau tourne sur
+  tout le festival — l'optimiseur gérait déjà le multi-jour. Le dimensionnement et la
+  flotte de navettes sont calés sur le jour le plus chargé (samedi) : flotte 33 navettes.
+  Dimensionnement du personnel basé sur les besoins **prévus** (pas gonflés par les
+  anomalies) : idéal sécurité 386 / food 257 / sanitaire 155 / médical 97, à comparer au
+  déployé (400 / 280 / 160 / 100) → bien dimensionné, petite marge. Ligne « effectif
+  disponible » ajoutée sur le graphe d'allocation pour expliquer le plafond. Sélecteur de
+  jour ajouté sur la page Allocation (site + dashboard), recos horodatées par jour.
+  Couverture moyennée sur 3 jours : 99,6 → 92,2 (figée) → 96,7 % (réallouée).
+- 13/07 (relecture, finitions) : libellés de scénarios propres partout (« Sécurité
+  renforcée », « Scènes DJ/Rock agrandies »… via `scenarios.LIBELLES`, source unique
+  exportée) au lieu des clés brutes ; correction de l'axe Y aberrant du graphe de
+  couverture des scénarios (bornes explicites 98-100 %, formateur non écrasé).
 - 13/07 (relecture, suite) : la carte 3D montre désormais l'infrastructure réelle —
   couche procédurale déterministe d'installations (`logique/installations.ts` :
   ~24 stands de restauration, ~30 blocs sanitaires, 6 postes de secours, postes de

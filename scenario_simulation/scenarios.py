@@ -11,6 +11,14 @@ SCENARIOS = {
     "securite_renforcee": {"equipes": {"securite": 1.4, "medical": 1.3}},
 }
 
+# Libelles lisibles des scenarios (affichage site + dashboard + recommandations).
+LIBELLES = {
+    "base": "Base",
+    "scenes_dj_rock_agrandies": "Scènes DJ/Rock agrandies",
+    "horaires_decales": "Horaires décalés",
+    "securite_renforcee": "Sécurité renforcée",
+}
+
 COUTS_HORAIRES = {"securite": 22, "food": 16, "sanitaire": 15, "medical": 28, "transport": 18}
 
 

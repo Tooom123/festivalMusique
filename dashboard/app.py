@@ -352,9 +352,10 @@ elif page == "Anomalies":
                  width="stretch", hide_index=True)
 
 elif page == "Allocation":
-    st.title(f"Allocation des ressources ({JOURS_LONG[3]})")
+    st.title("Allocation des ressources — les 3 jours")
     st.caption("Répartition du personnel optimisée par programmation linéaire à partir des "
-               "prévisions, puis ré-optimisée quand des anomalies sont détectées.")
+               "prévisions, puis ré-optimisée quand des anomalies sont détectées. Même méthode "
+               "appliquée aux trois jours (couvertures moyennées sur les 3 jours).")
     initiale = charge("allocation_initiale")
     figee = charge("allocation_figee")
     ajustee = charge("allocation_ajustee")
@@ -370,8 +371,11 @@ elif page == "Allocation":
     c3.metric("Besoins ajustés après réallocation", f"{pct_ajustee:.1f} %",
               f"+{pct_ajustee - pct_figee:.1f} pts de couverture")
 
-    type_choisi = st.selectbox("Type d'équipe", sorted(initiale["type"].unique()))
-    df = ajustee[ajustee["type"] == type_choisi].sort_values("creneau").copy()
+    cj, ct = st.columns(2)
+    jour_choisi = cj.selectbox("Jour", [1, 2, 3], format_func=lambda j: JOURS_LONG[j])
+    type_choisi = ct.selectbox("Type d'équipe", sorted(initiale["type"].unique()))
+    df = ajustee[(ajustee["type"] == type_choisi)
+                 & (ajustee["jour"] == jour_choisi)].sort_values("creneau").copy()
     df["nom"] = df["scene_id"].map(noms_scenes)
     df["heure"] = df["creneau"].apply(heure_texte)
     heures = [heure_texte(c) for c in sorted(df["creneau"].unique())]
@@ -382,23 +386,11 @@ elif page == "Allocation":
     fig.update_traces(marker_line=dict(width=1, color="#0d0d0d"))
     st.plotly_chart(style_fig(fig), width="stretch")
 
-    st.subheader("Besoin et alloué par scène (cumul de la journée)")
-    resume = df.groupby("nom")[["besoin", "alloue"]].sum().reset_index()
-    fig2 = go.Figure()
-    fig2.add_trace(go.Bar(x=resume["nom"], y=resume["besoin"], name="Besoin",
-                          marker_color="#9ec5f4"))
-    fig2.add_trace(go.Bar(x=resume["nom"], y=resume["alloue"], name="Alloué",
-                          marker_color="#3987e5"))
-    fig2.update_layout(barmode="group", yaxis_title="Personnel", legend_title=None,
-                       bargap=0.35)
-    fig2.update_traces(marker_line_width=0)
-    st.plotly_chart(style_fig(fig2, 380), width="stretch")
-
     st.subheader("Dimensionnement du personnel — combien déployer ?")
-    st.caption(f"D'après la prévision d'affluence du {JOURS_LONG[3]} 2026 : faut-il vraiment "
-               "100 % de l'effectif de pointe ? On teste tous les niveaux d'un coup : en dessous, "
-               "des créneaux restent à découvert (risque) ; au-dessus, c'est du personnel payé "
-               "pour rien.")
+    st.caption("D'après la prévision d'affluence des 3 jours (effectif de pointe calé sur le jour "
+               "le plus chargé, samedi) : faut-il vraiment 100 % de l'effectif de pointe ? On teste "
+               "tous les niveaux d'un coup : en dessous, des créneaux restent à découvert (risque) ; "
+               "au-dessus, c'est du personnel payé pour rien.")
     dim = charge("dimensionnement")
     niveaux = dim.drop_duplicates("niveau_pct").sort_values("niveau_pct")
     couleurs_niv = ["#d03b3b" if c < 0.9 else "#fab219" if c < 0.999 else "#0ca30c"
@@ -414,9 +406,12 @@ elif page == "Allocation":
     st.plotly_chart(style_fig(fig3, 340), width="stretch")
 
     from allocation.optimisation import INSTALLATIONS
+    equipes = charge("equipes")
+    deploye = equipes.groupby("type")["effectif"].sum().to_dict()
     ideal = dim.drop_duplicates("type")[["type", "ideal", "reference"]].copy()
     ideal["Domaine"] = ideal["type"].map({"securite": "Sécurité", "food": "Food",
                                           "sanitaire": "Sanitaire", "medical": "Médical"})
+    ideal["On déploie"] = ideal["type"].map(lambda t: int(deploye.get(t, 0)))
 
     def _repartition(row):
         i = INSTALLATIONS.get(row["type"], {})
@@ -426,8 +421,8 @@ elif page == "Allocation":
     ideal["Répartition (site entier)"] = ideal.apply(_repartition, axis=1)
     st.write("**Effectif idéal par domaine**")
     st.dataframe(
-        ideal.rename(columns={"ideal": "Effectif idéal", "reference": "Effectif de pointe (100 %)"})
-        [["Domaine", "Effectif idéal", "Effectif de pointe (100 %)", "Répartition (site entier)"]]
+        ideal.rename(columns={"ideal": "Effectif idéal", "reference": "Pic prévu (100 %)"})
+        [["Domaine", "Effectif idéal", "Pic prévu (100 %)", "On déploie", "Répartition (site entier)"]]
         .sort_values("Effectif idéal", ascending=False),
         width="stretch", hide_index=True)
     st.caption("Effectifs à l'échelle du site entier, répartis sur toutes les installations d'un "
@@ -490,13 +485,17 @@ elif page == "Scénarios":
     st.title("Comparaison de scénarios d'organisation")
     st.caption("Chaque configuration est rejouée 3 fois par la simulation avec des graines "
                "différentes, les métriques sont moyennées.")
+    from scenario_simulation.scenarios import LIBELLES as LIB_SCEN
     synthese = charge("scenarios_synthese")
     details = charge("scenarios_details")
+    synthese["Configuration"] = synthese["scenario"].map(LIB_SCEN)
+    details["Configuration"] = details["scenario"].map(LIB_SCEN)
+    ordre_lib = [LIB_SCEN[s] for s in ORDRE_SCENARIOS]
 
     meilleur = synthese.sort_values("taux_surcharge").iloc[0]
     base = synthese[synthese["scenario"] == "base"].iloc[0]
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Meilleure configuration", meilleur["scenario"].replace("_", " "))
+    c1.metric("Meilleure configuration", LIB_SCEN[meilleur["scenario"]])
     c2.metric("Créneaux en surcharge", f"{meilleur['taux_surcharge']:.1%}",
               f"{meilleur['taux_surcharge'] - base['taux_surcharge']:+.1%} vs base",
               delta_color="inverse")
@@ -514,28 +513,30 @@ elif page == "Scénarios":
     gauche, droite = st.columns(2)
     with gauche:
         st.subheader("Créneaux en surcharge")
-        fig = px.bar(synthese, x="scenario", y="taux_surcharge",
+        fig = px.bar(synthese, x="Configuration", y="taux_surcharge",
                      color_discrete_sequence=["#3987e5"],
-                     category_orders={"scenario": ORDRE_SCENARIOS})
+                     category_orders={"Configuration": ordre_lib})
         fig.update_layout(xaxis_title=None, yaxis_title=None, yaxis_tickformat=".0%",
                           bargap=0.45)
         fig.update_traces(marker_line_width=0)
         st.plotly_chart(style_fig(fig, 380), width="stretch")
     with droite:
         st.subheader("Coût du personnel (3 jours)")
-        fig2 = px.bar(synthese, x="scenario", y="cout_personnel",
+        fig2 = px.bar(synthese, x="Configuration", y="cout_personnel",
                       color_discrete_sequence=["#199e70"],
-                      category_orders={"scenario": ORDRE_SCENARIOS})
+                      category_orders={"Configuration": ordre_lib})
         fig2.update_layout(xaxis_title=None, yaxis_title="EUR", bargap=0.45)
         fig2.update_traces(marker_line_width=0)
         st.plotly_chart(style_fig(fig2, 380), width="stretch")
 
     st.subheader("Couverture des besoins (3 runs)")
-    fig3 = px.box(details, x="scenario", y="couverture_besoins",
+    fig3 = px.box(details, x="Configuration", y="couverture_besoins",
                   color_discrete_sequence=["#9085e9"],
-                  category_orders={"scenario": ORDRE_SCENARIOS})
+                  category_orders={"Configuration": ordre_lib})
     fig3.update_layout(xaxis_title=None, yaxis_title=None, yaxis_tickformat=".1%")
     st.plotly_chart(style_fig(fig3, 340), width="stretch")
 
-    st.dataframe(synthese.set_index("scenario").loc[ORDRE_SCENARIOS].reset_index(),
+    table = synthese.set_index("scenario").loc[ORDRE_SCENARIOS].reset_index()
+    table = table.drop(columns=["scenario"]).rename(columns={"Configuration": "Scénario"})
+    st.dataframe(table[["Scénario"] + [c for c in table.columns if c != "Scénario"]],
                  width="stretch", hide_index=True)

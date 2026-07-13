@@ -2,6 +2,10 @@ LIBELLES_TYPES = {"securite": "agents de sécurité", "food": "équipiers food",
                   "sanitaire": "agents sanitaires", "medical": "secouristes",
                   "transport": "agents transport"}
 
+JOURS = {1: "vendredi", 2: "samedi", 3: "dimanche"}
+
+from scenario_simulation.scenarios import LIBELLES as LIBELLES_SCENARIOS
+
 
 def heure_texte(minute):
     minute = int(minute)
@@ -20,7 +24,7 @@ def genere(previsions, scenes, anomalies, initiale, ajustee, synthese):
         gravite = "critique" if l["taux_prevu"] >= 1.0 else "eleve"
         recos.append({
             "gravite": gravite,
-            "titre": f"Surcharge prévue sur {noms[int(l['scene_id'])]} à {heure_texte(l['creneau'])}",
+            "titre": f"Surcharge prévue sur {noms[int(l['scene_id'])]} — {JOURS[int(l['jour'])]} {heure_texte(l['creneau'])}",
             "detail": f"Occupation prévue à {l['taux_prevu']:.0%} de la capacité "
                       f"({int(l['prevision'])} visiteurs pour {int(l['capacite'])} places). "
                       f"Limiter les entrées en amont et ouvrir les sorties latérales.",
@@ -38,7 +42,7 @@ def genere(previsions, scenes, anomalies, initiale, ajustee, synthese):
             "gravite": "info",
             "titre": f"+{int(l['delta'])} {LIBELLES_TYPES[l['type']]} réaffectés sur {noms[int(l['scene_id'])]}",
             "detail": "Réallocation déclenchée automatiquement par les anomalies détectées "
-                      "sur cette scène (cumul des créneaux de la journée).",
+                      "sur cette scène (cumul des créneaux sur les 3 jours).",
         })
 
     manques = (fusion[fusion["besoin"] > fusion["alloue"]]
@@ -50,7 +54,7 @@ def genere(previsions, scenes, anomalies, initiale, ajustee, synthese):
         recos.append({
             "gravite": "moyen",
             "titre": f"Besoin résiduel non couvert : {LIBELLES_TYPES[l['type']]} sur {noms[int(l['scene_id'])]}",
-            "detail": f"Il manque {int(l['deficit'])} personnes cumulées sur la journée malgré "
+            "detail": f"Il manque {int(l['deficit'])} personnes cumulées sur les 3 jours malgré "
                       f"la réallocation : l'effectif total est insuffisant aux heures de pointe. "
                       f"Prévoir des vacataires ou étaler la programmation.",
         })
@@ -66,7 +70,7 @@ def genere(previsions, scenes, anomalies, initiale, ajustee, synthese):
             cout_texte = f"pour un surcoût de personnel de {surcout:+,.0f} EUR".replace(",", " ")
         recos.append({
             "gravite": "ok",
-            "titre": f"Organisation recommandée : {meilleur['scenario'].replace('_', ' ')}",
+            "titre": f"Organisation recommandée : {LIBELLES_SCENARIOS.get(meilleur['scenario'], meilleur['scenario'])}",
             "detail": f"La simulation comparative fait passer les créneaux en surcharge de "
                       f"{base['taux_surcharge']:.1%} à {meilleur['taux_surcharge']:.1%} et le pic "
                       f"d'occupation de {base['pic_occupation']:.2f} à {meilleur['pic_occupation']:.2f}, "
@@ -78,7 +82,7 @@ def genere(previsions, scenes, anomalies, initiale, ajustee, synthese):
             and pire_rapport["taux_surcharge"] >= meilleur["taux_surcharge"]):
         recos.append({
             "gravite": "moyen",
-            "titre": f"Rapport coût/bénéfice défavorable : {pire_rapport['scenario'].replace('_', ' ')}",
+            "titre": f"Rapport coût/bénéfice défavorable : {LIBELLES_SCENARIOS.get(pire_rapport['scenario'], pire_rapport['scenario'])}",
             "detail": f"Ce scénario coûte {pire_rapport['cout_personnel'] - base['cout_personnel']:+,.0f} EUR "
                       f"de personnel pour une surcharge de {pire_rapport['taux_surcharge']:.1%} "
                       f"(contre {meilleur['taux_surcharge']:.1%} pour la meilleure option) : "

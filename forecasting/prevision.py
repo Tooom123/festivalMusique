@@ -90,7 +90,16 @@ def entraine(df, annee_courante):
     importances = pd.DataFrame({"variable": COLONNES,
                                 "importance": permutation.importances_mean})
     importances = importances.sort_values("importance", ascending=False).reset_index(drop=True)
-    return test, metriques, importances
+    return test, metriques, importances, modele
+
+
+def prevoit_operationnel(df, modele, annee_courante):
+    """Applique le modele retenu aux 3 jours de l'edition courante (meme formule
+    que la prevision du dimanche), pour alimenter l'allocation sur tout le festival.
+    """
+    base = df[df["annee"] == annee_courante].copy()
+    base["prevision"] = np.round(modele.predict(base[COLONNES])).clip(0).astype(int)
+    return base
 
 
 # Part de la capacite encore disponible qui se vendra d'ici l'evenement (ventes

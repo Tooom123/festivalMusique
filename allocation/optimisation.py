@@ -142,7 +142,10 @@ def analyse_dimensionnement(besoins, niveaux=NIVEAUX, seuil_ok=0.99):
     la couverture obtenue. L'effectif ideal d'un domaine est le plus petit niveau
     teste qui couvre au moins `seuil_ok` de ses besoins (sinon la reference).
     """
-    pic = (besoins.groupby(["creneau", "type"])["besoin"].sum()
+    # Reference (100 %) = pic de besoin simultane, cad le max sur tous les
+    # (jour, creneau) de la somme des besoins des scenes. Le max sur les 3 jours
+    # revient au jour le plus charge : on dimensionne pour le pire cas du festival.
+    pic = (besoins.groupby(["jour", "creneau", "type"])["besoin"].sum()
            .reset_index().groupby("type")["besoin"].max())
     reference = {t: int(pic[t]) for t in pic.index}
 
