@@ -11,9 +11,9 @@ export const POSITIONS: Record<number, [number, number]> = {
 };
 
 export const COULEURS_SCENES: Record<number, string> = {
-  1: "#3987e5",
-  2: "#199e70",
-  3: "#c98500",
+  1: "#e63419",
+  2: "#ff7a18",
+  3: "#ffb300",
 };
 
 export const ECHELLE_MONDE = 1.3;

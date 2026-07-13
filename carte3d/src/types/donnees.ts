@@ -70,6 +70,8 @@ export interface OptionsMontage {
   jour?: number;
   onScene?: (sceneId: number) => void;
   onPoi?: (poi: Poi) => void;
+  onEnsemble?: () => void;
+  onEntree?: () => void;
 }
 
 export interface ApiCarte3D {

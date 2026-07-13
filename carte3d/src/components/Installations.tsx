@@ -19,7 +19,7 @@ function versPlaza(x: number, z: number): number {
 
 // Petit stand de restauration : caisson + auvent colore. Alterne nourriture / boisson.
 function Stand({ boisson }: { boisson: boolean }) {
-  const accent = boisson ? "#3987e5" : "#c98500";
+  const accent = boisson ? "#ffb300" : "#ff7a18";
   return (
     <group>
       <mesh position={[0, 0.9, 0]}>
@@ -44,16 +44,16 @@ function BlocSanitaire() {
     <group>
       <mesh position={[0, 1.05, 0]}>
         <boxGeometry args={[2.2, 2.1, 1.7]} />
-        <meshStandardMaterial color="#2b5a94" roughness={0.8} />
+        <meshStandardMaterial color="#33291f" roughness={0.8} />
       </mesh>
       <mesh position={[0, 2.18, 0]}>
         <boxGeometry args={[2.45, 0.18, 1.95]} />
-        <meshStandardMaterial color="#1c3d66" roughness={0.85} />
+        <meshStandardMaterial color="#241109" roughness={0.85} />
       </mesh>
       {[-0.55, 0.55].map((px) => (
         <mesh key={px} position={[px, 0.95, 0.87]}>
           <boxGeometry args={[0.5, 1.5, 0.06]} />
-          <meshStandardMaterial color="#6da7ec" roughness={0.5} />
+          <meshStandardMaterial color="#ffb300" emissive="#a86a00" emissiveIntensity={0.45} roughness={0.5} />
         </mesh>
       ))}
     </group>
@@ -92,7 +92,7 @@ function PosteSecurite() {
       </mesh>
       <mesh position={[0, 1.78, 0]}>
         <boxGeometry args={[1.7, 0.16, 1.7]} />
-        <meshStandardMaterial color="#4f7cff" emissive="#4f7cff" emissiveIntensity={0.9} />
+        <meshStandardMaterial color="#ff7a18" emissive="#ff5a12" emissiveIntensity={0.9} />
       </mesh>
     </group>
   );

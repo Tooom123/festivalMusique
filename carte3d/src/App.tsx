@@ -1,6 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { useMemo, useState } from "react";
 import { FestivalScene } from "./components/FestivalScene";
+import { BarreControles } from "./components/HUD/BarreControles";
 import { JournalAnomalies } from "./components/HUD/JournalAnomalies";
 import { Legende } from "./components/HUD/Legende";
 import { PanneauScene } from "./components/HUD/PanneauScene";
@@ -17,12 +18,19 @@ interface Props {
   jour: number;
   onScene?: (sceneId: number) => void;
   onPoi?: (poi: Poi) => void;
+  onEnsemble?: () => void;
+  onEntree?: () => void;
+  onChangeEdition?: (annee: number) => void;
+  onChangeJour?: (jour: number) => void;
 }
 
 // Racine de la carte 3D : etat (edition, jour, creneau, selection), Canvas R3F
-// et HUD. Les callbacks onScene / onPoi permettent a la page hote de conserver
-// ses panneaux existants (programme d'une scene, carte d'un stand).
-export function App({ donnees, edition, jour, onScene, onPoi }: Props) {
+// et HUD. Les callbacks onScene / onPoi / onEntree / onEnsemble routent vers le
+// drawer d'analyse de la page hote. Les selecteurs edition/jour vivent desormais
+// dans le HUD (la sidebar de l'ancien site ayant disparu).
+export function App({
+  donnees, edition, jour, onScene, onPoi, onEnsemble, onEntree, onChangeEdition, onChangeJour,
+}: Props) {
   const [selection, setSelection] = useState<number | null>(null);
   const [declencheurFocus, setDeclencheurFocus] = useState(0);
 
@@ -91,8 +99,8 @@ export function App({ donnees, edition, jour, onScene, onPoi }: Props) {
         camera={{ position: [0, 106, 132], fov: 40, near: 1, far: 900 }}
         onPointerMissed={() => setSelection(null)}
       >
-        <color attach="background" args={["#07090f"]} />
-        <fog attach="fog" args={["#07090f", 190, 460]} />
+        <color attach="background" args={["#0a0505"]} />
+        <fog attach="fog" args={["#140a08", 190, 460]} />
         <FestivalScene
           scenes={scenes}
           flux={flux}
@@ -101,9 +109,19 @@ export function App({ donnees, edition, jour, onScene, onPoi }: Props) {
           declencheurFocus={declencheurFocus}
           onScene={selectionneScene}
           onPoi={(p) => onPoi?.(p)}
+          onEntree={onEntree}
         />
       </Canvas>
 
+      <BarreControles
+        editions={donnees.editions}
+        edition={edition}
+        jour={jour}
+        joursLong={donnees.jours_long}
+        onChangeEdition={(a) => onChangeEdition?.(a)}
+        onChangeJour={(j) => onChangeJour?.(j)}
+        onEnsemble={onEnsemble}
+      />
       <Legende />
       <JournalAnomalies
         episodes={episodesVisibles}
@@ -126,6 +144,7 @@ export function App({ donnees, edition, jour, onScene, onPoi }: Props) {
           noms={noms}
           set={set}
           onFermer={() => setSelection(null)}
+          onAnalyse={() => onScene?.(etatSelection.sceneId)}
         />
       )}
     </div>

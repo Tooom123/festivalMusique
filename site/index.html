@@ -3,317 +3,204 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NOVA Festival — 4·5·6 septembre 2026</title>
+<title>HellFess — 4·5·6 septembre 2026</title>
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<button id="bouton-menu" aria-label="Ouvrir le menu">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
-</button>
-<div id="voile"></div>
+<!-- Carte 3D plein écran : cœur du site. Tout part de là. -->
+<div id="carte-plein"></div>
 
-<aside class="sidebar" id="sidebar">
-  <div class="marque">
-    <div class="logo">NOVA<span>FESTIVAL</span></div>
-    <div class="dates">4 · 5 · 6 septembre 2026</div>
-  </div>
+<!-- Bandeau de marque, superposé en haut à gauche -->
+<div id="marque">
+  <div class="logo">HELL<span>FESS</span></div>
+  <div class="dates">4 · 5 · 6 septembre 2026</div>
+</div>
 
-  <nav aria-label="Navigation principale">
-    <button class="nav-item actif" data-page="accueil">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <span>Vue d'ensemble</span>
-    </button>
-    <button class="nav-item" data-page="programmation">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-      <span>Programmation</span>
-    </button>
-    <button class="nav-item" data-page="carte">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-      <span>Carte du site</span>
-    </button>
-    <button class="nav-item" data-page="affluence">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span>Affluence</span>
-    </button>
-    <button class="nav-item" data-page="previsions">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-      <span>Prévisions</span>
-    </button>
-    <button class="nav-item" data-page="anomalies">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span>Anomalies</span>
-    </button>
-    <button class="nav-item" data-page="allocation">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      <span>Allocation</span>
-    </button>
-    <button class="nav-item" data-page="recommandations">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
-      <span>Recommandations</span>
-    </button>
-    <button class="nav-item" data-page="scenarios">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/></svg>
-      <span>Scénarios</span>
-    </button>
-  </nav>
+<!-- Aide contextuelle : rappelle qu'on clique les éléments de la carte -->
+<div id="indice-carte">
+  <span class="pastille"></span>
+  Cliquez une <b>scène</b> ou un <b>stand</b> pour ouvrir son analyse
+</div>
 
-  <div class="sidebar-pied">
-    Système intelligent de gestion<br>
-    Données du pipeline — graine 42
-  </div>
+<!-- Voile assombrissant derrière le drawer -->
+<div id="drawer-voile"></div>
+
+<!-- Panneau d'analyse flottant (rempli dynamiquement par app.js) -->
+<aside id="drawer" aria-hidden="true">
+  <header class="drawer-tete">
+    <div class="drawer-titres">
+      <span class="drawer-surtitre" id="drawer-surtitre"></span>
+      <h2 id="drawer-titre"></h2>
+    </div>
+    <button class="drawer-fermer" id="drawer-fermer" aria-label="Fermer le panneau">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </header>
+  <div class="drawer-corps" id="drawer-corps"></div>
 </aside>
 
-<main id="contenu">
+<!-- ===== Gabarits des panneaux d'analyse (clonés dans le drawer à l'ouverture) ===== -->
 
-  <section class="page actif" id="page-accueil">
-    <div class="hero">
-      <div class="hero-blobs" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="hero-int">
-        <p class="hero-sur">5ᵉ édition — 4 · 5 · 6 septembre 2026 — capacité 50 000 personnes / jour</p>
-        <h1>NOVA<br><span>FESTIVAL</span></h1>
-        <p class="hero-sous">3 scènes. 48 artistes. Un système intelligent qui prévoit l'affluence,
-        détecte les incidents et réalloue les équipes en temps réel.</p>
-        <div class="hero-chips">
-          <span class="chip">Scène Rap — 25 000 places</span>
-          <span class="chip">Scène DJ — 20 000 places</span>
-          <span class="chip">Scène Rock — 5 000 places</span>
-        </div>
-      </div>
-    </div>
+<template id="gabarit-ensemble">
+  <div class="bloc-hero">
+    <p class="bloc-sur">5ᵉ édition · capacité 50 000 / jour</p>
+    <p class="bloc-txt">3 scènes, 48 artistes. Un système intelligent qui prévoit l'affluence,
+    détecte les incidents et réalloue les équipes.</p>
+  </div>
+  <h3 class="titre-bloc">Têtes d'affiche</h3>
+  <div class="headliners" id="headliners"></div>
+  <h3 class="titre-bloc">Le festival en chiffres</h3>
+  <div class="grille-kpi" id="kpi-accueil"></div>
+  <div class="carte-graph">
+    <h3>Affluence totale du site</h3>
+    <div class="graph" id="graph-affluence-totale"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Anomalies par jour</h3>
+    <div class="graph" id="graph-anomalies-jour"></div>
+  </div>
+  <h3 class="titre-bloc">Programmation</h3>
+  <div class="segments" id="seg-prog"></div>
+  <div class="carte-graph">
+    <div class="graph graph-haut" id="graph-gantt"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Grille horaire</h3>
+    <div class="conteneur-table" id="table-prog"></div>
+  </div>
+</template>
 
-    <h2 class="titre-section">Têtes d'affiche</h2>
-    <div class="headliners" id="headliners"></div>
-    <p class="credit-photos">Photos : Wikimedia Commons, licences CC BY / CC BY-SA — détail dans <code>site/photos/CREDITS.md</code></p>
+<template id="gabarit-affluence">
+  <p class="bloc-txt" id="affluence-intro">Fréquentation observée par scène, issue de la
+  simulation à événements discrets. Prévision opérationnelle par créneau de 30 min pour le dimanche.</p>
+  <div class="segments" id="seg-affluence"></div>
+  <div class="carte-graph">
+    <div class="graph" id="graph-affluence-scenes"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Taux d'occupation</h3>
+    <div class="graph" id="graph-heatmap"></div>
+  </div>
+  <h3 class="titre-bloc">Prévision par scène et créneau</h3>
+  <div class="grille-kpi" id="kpi-previsions"></div>
+  <div class="segments" id="seg-previsions"></div>
+  <div class="carte-graph">
+    <div class="graph" id="graph-previsions"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Importance des variables (permutation)</h3>
+    <div class="graph" id="graph-importances"></div>
+  </div>
+</template>
 
-    <h2 class="titre-section">Le festival en chiffres</h2>
-    <div class="grille-kpi" id="kpi-accueil"></div>
+<template id="gabarit-previsions">
+  <p class="bloc-txt">Deux horizons : la fréquentation de la 5ᵉ édition estimée par la tendance
+  2022-2025 et la billetterie, puis la prévision fine par scène et créneau.</p>
+  <div class="carte-graph">
+    <h3>Affluence par édition — la 5ᵉ année prédite</h3>
+    <div class="graph" id="graph-editions"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Billetterie en ligne — ventes à 2 mois</h3>
+    <p class="sous-note">Les pré-ventes sont un signal direct de la demande : le samedi part le
+    plus vite. On combine avec la tendance historique pour rattraper le samedi.</p>
+    <div id="billetterie-panneau"></div>
+  </div>
+</template>
 
-    <div class="deux-colonnes">
-      <div class="carte-graph">
-        <h3>Affluence totale du site</h3>
-        <div class="graph" id="graph-affluence-totale"></div>
-      </div>
-      <div class="carte-graph">
-        <h3>Anomalies par jour</h3>
-        <div class="graph" id="graph-anomalies-jour"></div>
-      </div>
-    </div>
-    <p class="note-pipeline">Pipeline : simulation à événements discrets · prévision (historique 2022-2025 + comparatif de modèles) ·
-    détection (règles + Isolation Forest) · allocation (programmation linéaire) · scénarios (rejeu Monte Carlo)</p>
-  </section>
+<template id="gabarit-anomalies">
+  <p class="bloc-txt">Règles métier (surcharges, pannes, mouvements de foule) complétées par
+  Isolation Forest, évaluées contre les incidents injectés dans la simulation.</p>
+  <div class="grille-kpi" id="kpi-anomalies"></div>
+  <div class="segments" id="seg-anomalies"></div>
+  <div class="carte-graph">
+    <div class="graph" id="graph-anomalies"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Détail des anomalies</h3>
+    <div class="conteneur-table" id="table-anomalies"></div>
+  </div>
+  <h3 class="titre-bloc">Anticipation — prévoir les surcharges avant le jour J</h3>
+  <p class="sous-note">On applique la règle de surcharge sur la <b>prévision</b> du dimanche pour
+  alerter à l'avance, puis on vérifie combien de ces alertes se sont réalisées.</p>
+  <div class="grille-kpi" id="kpi-anticipation"></div>
+  <div class="carte-graph">
+    <h3>Alertes anticipées (dimanche 6 septembre)</h3>
+    <div class="conteneur-table" id="table-anticipation"></div>
+  </div>
+</template>
 
-  <section class="page" id="page-programmation">
-    <header class="entete-page">
-      <h1>Programmation</h1>
-      <p>16 sets d'une heure par jour, de 16h à minuit. Deux scènes actives en permanence,
-      la troisième en pause pour le changement de plateau. Les têtes d'affiche clôturent à 23h.</p>
-    </header>
-    <div class="segments" id="seg-prog"></div>
-    <div class="carte-graph">
-      <div class="graph graph-haut" id="graph-gantt"></div>
-    </div>
-    <div class="carte-graph">
-      <h3>Grille horaire</h3>
-      <div class="conteneur-table" id="table-prog"></div>
-    </div>
-  </section>
+<template id="gabarit-allocation">
+  <p class="bloc-txt">Répartition du personnel optimisée par programmation linéaire à partir des
+  prévisions, puis ré-optimisée quand des anomalies sont détectées.</p>
+  <div class="grille-kpi" id="kpi-allocation"></div>
+  <div class="segments" id="seg-allocation"></div>
+  <div class="carte-graph">
+    <div class="graph" id="graph-allocation"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Besoin et alloué par scène (cumul du jour)</h3>
+    <div class="graph" id="graph-besoin-alloue"></div>
+  </div>
+  <h3 class="titre-bloc">Dimensionnement du personnel</h3>
+  <p class="sous-note">Faut-il déployer 100 % de l'effectif de pointe ? On teste tous les niveaux
+  et on mesure la couverture. En dessous, des créneaux restent à découvert ; au-dessus, c'est payé pour rien.</p>
+  <div class="carte-graph">
+    <h3>Couverture selon l'effectif déployé</h3>
+    <div class="graph" id="graph-dimensionnement"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Effectif idéal par domaine</h3>
+    <div id="dimensionnement-ideal"></div>
+    <p class="sous-note" style="margin-top:14px">Effectifs à l'échelle du <b>site entier</b>,
+    répartis sur toutes les installations. La carte n'affiche que des marqueurs représentatifs.</p>
+  </div>
+</template>
 
-  <section class="page" id="page-carte">
-    <header class="entete-page">
-      <h1>Carte du site</h1>
-      <p>Carte 3D interactive : molette pour zoomer, clic gauche pour tourner, clic droit pour se déplacer,
-      double-clic sur une scène pour la centrer. On rejoue chaque édition heure par heure — les éditions
-      2022 à 2025 sont le déroulé réel passé (données identiques à chaque lancement), et 2026 est la
-      simulation de notre prédiction (affluence pilotée par les prévisions, line-up annoncé). Cliquer sur
-      une scène ou un stand pour le détail. Le bouton lecture rejoue la journée.</p>
-    </header>
-    <div class="barre-outils">
-      <div class="segments segments-edition" id="seg-edition"></div>
-      <div class="segments" id="seg-carte"></div>
-      <div class="mini-kpis" id="kpi-carte"></div>
-    </div>
-    <div class="carte-graph">
-      <div class="graph graph-carte" id="graph-carte"></div>
-    </div>
-    <div class="carte-graph" id="panneau-detail" hidden>
-      <div class="panneau-tete">
-        <h3 id="detail-titre"></h3>
-        <button class="fermer" id="detail-fermer" aria-label="Fermer le panneau">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="conteneur-table" id="detail-corps"></div>
-    </div>
-  </section>
+<template id="gabarit-transport">
+  <p class="bloc-txt">Les navettes gèrent <b>deux flux</b> : amener le public à l'ouverture et
+  évacuer la vague de départs à la clôture. On dimensionne la flotte sur la contrainte la plus dure.</p>
+  <div class="carte-graph">
+    <h3>Charge des navettes au fil de la soirée</h3>
+    <div class="graph" id="graph-transport"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Flotte de navettes à prévoir</h3>
+    <div id="transport-resume"></div>
+  </div>
+  <h3 class="titre-bloc">Billetterie — état des ventes</h3>
+  <div class="carte-graph">
+    <div id="billetterie-panneau-t"></div>
+  </div>
+</template>
 
-  <section class="page" id="page-affluence">
-    <header class="entete-page">
-      <h1>Affluence par scène</h1>
-      <p>Fréquentation observée, issue de la simulation à événements discrets.</p>
-    </header>
-    <div class="segments" id="seg-affluence"></div>
-    <div class="carte-graph">
-      <div class="graph" id="graph-affluence-scenes"></div>
-    </div>
-    <div class="carte-graph">
-      <h3>Taux d'occupation</h3>
-      <div class="graph" id="graph-heatmap"></div>
-    </div>
-  </section>
+<template id="gabarit-scenarios">
+  <p class="bloc-txt">Chaque configuration d'organisation est rejouée 3 fois par la simulation
+  avec des graines différentes ; les métriques sont moyennées.</p>
+  <div class="grille-kpi" id="kpi-scenarios"></div>
+  <div class="carte-graph">
+    <h3>Créneaux en surcharge</h3>
+    <div class="graph" id="graph-surcharge"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Coût du personnel (3 jours)</h3>
+    <div class="graph" id="graph-cout"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Couverture des besoins — 3 runs par scénario</h3>
+    <div class="graph" id="graph-couverture"></div>
+  </div>
+  <div class="carte-graph">
+    <h3>Synthèse</h3>
+    <div class="conteneur-table" id="table-scenarios"></div>
+  </div>
+  <h3 class="titre-bloc">Recommandations</h3>
+  <div id="liste-recos"></div>
+</template>
 
-  <section class="page" id="page-previsions">
-    <header class="entete-page">
-      <h1>Prévision de l'affluence</h1>
-      <p>Deux horizons. D'abord la fréquentation de la 5ᵉ édition, estimée par la tendance des
-      quatre éditions précédentes (dimensionnement). Puis la prévision opérationnelle par scène
-      et par créneau de 30 min pour le dimanche : modèles entraînés sur les éditions 2022-2025
-      plus le vendredi et le samedi 2026, comparés et départagés sur les données du dimanche.</p>
-    </header>
-    <div class="carte-graph">
-      <h3>Affluence par édition — la 5ᵉ année prédite (tendance + billetterie)</h3>
-      <div class="graph" id="graph-editions"></div>
-    </div>
-    <div class="carte-graph">
-      <h3>Billetterie en ligne — état des ventes à 2 mois de l'événement</h3>
-      <p class="sous-note">Les pré-ventes sont un signal direct de la demande : le samedi part le
-      plus vite (têtes d'affiche). On projette la fréquentation finale, puis on la combine avec la
-      tendance historique pour une prévision plus robuste — c'est ce qui rattrape le samedi.</p>
-      <div id="billetterie-panneau"></div>
-    </div>
-    <div class="grille-kpi" id="kpi-previsions"></div>
-    <div class="segments" id="seg-previsions"></div>
-    <div class="carte-graph">
-      <div class="graph" id="graph-previsions"></div>
-    </div>
-    <div class="carte-graph">
-      <h3>Importance des variables (par permutation)</h3>
-      <div class="graph" id="graph-importances"></div>
-    </div>
-  </section>
-
-  <section class="page" id="page-anomalies">
-    <header class="entete-page">
-      <h1>Anomalies détectées</h1>
-      <p>Règles métier (surcharges, pannes, mouvements de foule) complétées par Isolation Forest.
-      La détection est évaluée contre les incidents injectés dans la simulation.</p>
-    </header>
-    <div class="grille-kpi" id="kpi-anomalies"></div>
-    <div class="segments" id="seg-anomalies"></div>
-    <div class="carte-graph">
-      <div class="graph" id="graph-anomalies"></div>
-    </div>
-    <div class="carte-graph">
-      <h3>Détail des anomalies</h3>
-      <div class="conteneur-table" id="table-anomalies"></div>
-    </div>
-
-    <h2 class="titre-section">Anticipation — prévoir les surcharges avant l'événement</h2>
-    <p class="sous-note">La détection ci-dessus réagit à ce qui se passe. Ici, on va plus loin :
-    on applique la règle de surcharge sur la <b>prévision d'affluence</b> du dimanche 6 septembre 2026
-    pour <b>alerter à l'avance</b> (avant le jour J), puis on vérifie combien de ces alertes se sont
-    réellement produites. On n'anticipe que les surcharges (prévisibles depuis l'affluence) — pas les
-    pannes ni les micro-mouvements de foule, par nature imprévisibles.</p>
-    <div class="grille-kpi" id="kpi-anticipation"></div>
-    <div class="carte-graph">
-      <h3>Alertes anticipées (dimanche 6 septembre)</h3>
-      <div class="conteneur-table" id="table-anticipation"></div>
-    </div>
-  </section>
-
-  <section class="page" id="page-allocation">
-    <header class="entete-page">
-      <h1>Allocation des ressources — dimanche 6 septembre</h1>
-      <p>Répartition du personnel optimisée par programmation linéaire à partir des prévisions,
-      puis ré-optimisée quand des anomalies sont détectées.</p>
-    </header>
-    <div class="grille-kpi" id="kpi-allocation"></div>
-    <div class="segments" id="seg-allocation"></div>
-    <div class="carte-graph">
-      <div class="graph" id="graph-allocation"></div>
-    </div>
-    <div class="carte-graph">
-      <h3>Besoin et alloué par scène (cumul de la journée)</h3>
-      <div class="graph" id="graph-besoin-alloue"></div>
-    </div>
-
-    <h2 class="titre-section">Dimensionnement du personnel — combien déployer ?</h2>
-    <p class="sous-note">D'après la prévision d'affluence du <b>dimanche 6 septembre 2026</b>, on connaît
-    le besoin en personnel (via les ratios d'encadrement). Mais faut-il vraiment embaucher 100 % de cet
-    effectif de pointe ? On teste tous les niveaux d'un coup : à chaque niveau, on ré-optimise la
-    répartition sur la journée et on mesure la couverture. En dessous, des créneaux restent à découvert
-    (risque) ; au-dessus, c'est du personnel payé pour rien.</p>
-    <div class="deux-colonnes">
-      <div class="carte-graph">
-        <h3>Couverture des besoins selon l'effectif déployé</h3>
-        <div class="graph" id="graph-dimensionnement"></div>
-      </div>
-      <div class="carte-graph">
-        <h3>Effectif idéal par domaine</h3>
-        <div id="dimensionnement-ideal"></div>
-        <p class="sous-note" style="margin-top:14px">Ce sont des effectifs à l'échelle du <b>site
-        entier</b>, répartis sur toutes les installations d'un festival de 50 000 personnes. La carte
-        du site n'en affiche que quelques marqueurs représentatifs (1 stand, 3 toilettes…), pas
-        l'inventaire complet.</p>
-      </div>
-    </div>
-
-    <h2 class="titre-section">Transport — dimensionner la flotte de navettes</h2>
-    <p class="sous-note">Les navettes ne se répartissent pas par scène : c'est un service à l'échelle
-    du site, qui gère <b>deux flux</b>. À l'ouverture, elles tournent à plein pour <b>amener</b> le public
-    (dès 15h30) ; en fin de soirée, elles doivent <b>évacuer</b> la vague de départs qui explose à la
-    clôture. On dimensionne la flotte sur la contrainte la plus dure — l'évacuation en 2 h — et on en
-    déduit le personnel transport.</p>
-    <div class="deux-colonnes">
-      <div class="carte-graph">
-        <h3>Charge des navettes au fil de la soirée</h3>
-        <div class="graph" id="graph-transport"></div>
-      </div>
-      <div class="carte-graph">
-        <h3>Flotte de navettes à prévoir</h3>
-        <div id="transport-resume"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="page" id="page-recommandations">
-    <header class="entete-page">
-      <h1>Recommandations</h1>
-      <p>Générées automatiquement à partir des prévisions, des anomalies, de la réallocation
-      et des scénarios simulés.</p>
-    </header>
-    <div id="liste-recos"></div>
-  </section>
-
-  <section class="page" id="page-scenarios">
-    <header class="entete-page">
-      <h1>Comparaison de scénarios d'organisation</h1>
-      <p>Chaque configuration est rejouée 3 fois par la simulation avec des graines différentes,
-      les métriques sont moyennées.</p>
-    </header>
-    <div class="grille-kpi" id="kpi-scenarios"></div>
-    <div class="deux-colonnes">
-      <div class="carte-graph">
-        <h3>Créneaux en surcharge</h3>
-        <div class="graph" id="graph-surcharge"></div>
-      </div>
-      <div class="carte-graph">
-        <h3>Coût du personnel (3 jours)</h3>
-        <div class="graph" id="graph-cout"></div>
-      </div>
-    </div>
-    <div class="carte-graph">
-      <h3>Couverture des besoins — 3 runs par scénario</h3>
-      <div class="graph" id="graph-couverture"></div>
-    </div>
-    <div class="carte-graph">
-      <h3>Synthèse</h3>
-      <div class="conteneur-table" id="table-scenarios"></div>
-    </div>
-  </section>
-
-</main>
+<p id="credit-photos-pied">Photos têtes d'affiche : Wikimedia Commons, licences CC BY / CC BY-SA — détail dans <code>site/photos/CREDITS.md</code></p>
 
 <script src="donnees.js"></script>
 <script src="lib/echarts.min.js"></script>

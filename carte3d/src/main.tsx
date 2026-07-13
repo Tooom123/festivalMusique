@@ -25,6 +25,10 @@ function monte(element: HTMLElement, options: OptionsMontage): ApiCarte3D {
         jour={jour}
         onScene={options.onScene}
         onPoi={options.onPoi}
+        onEnsemble={options.onEnsemble}
+        onEntree={options.onEntree}
+        onChangeEdition={setEdition}
+        onChangeJour={setJour}
       />
     );
   }

@@ -8,7 +8,7 @@ import { aleatoire } from "../logique/geometrie";
 
 const PLAZA = monde(50, 40);
 const MAX_PAR_SCENE = 1000;
-const TEINTES = ["#cfd3e0", "#9aa2b8", "#6e7890", "#b9c2d6", "#8891ab"];
+const TEINTES = ["#e0d3c8", "#c2a898", "#a08070", "#d6c0b0", "#b09585"];
 
 // La foule devant chaque scene : un point par ~22 festivaliers (InstancedMesh).
 // Le nombre et l'etalement suivent l'affluence reelle, la disposition est

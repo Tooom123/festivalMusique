@@ -48,7 +48,7 @@ function FluxAnime({ flux, slot }: { flux: LigneFlux | null; slot: number }) {
         <meshBasicMaterial
           ref={refMat}
           map={texture}
-          color="#7ea0ff"
+          color="#ffb060"
           transparent
           opacity={0}
           blending={THREE.AdditiveBlending}

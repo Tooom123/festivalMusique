@@ -63,16 +63,16 @@ function Toilettes() {
     <group>
       <mesh position={[0, 1.3, 0]} castShadow>
         <boxGeometry args={[3.1, 2.6, 2.2]} />
-        <meshStandardMaterial color="#2b5a94" roughness={0.75} />
+        <meshStandardMaterial color="#33291f" roughness={0.75} />
       </mesh>
       <mesh position={[0, 2.72, 0]}>
         <boxGeometry args={[3.4, 0.24, 2.5]} />
-        <meshStandardMaterial color="#1c3d66" roughness={0.8} />
+        <meshStandardMaterial color="#241109" roughness={0.8} />
       </mesh>
       {[-0.85, 0, 0.85].map((px) => (
         <mesh key={px} position={[px, 1.2, 1.12]}>
           <boxGeometry args={[0.62, 1.9, 0.08]} />
-          <meshStandardMaterial color="#6da7ec" roughness={0.5} />
+          <meshStandardMaterial color="#ffb300" emissive="#a86a00" emissiveIntensity={0.5} roughness={0.5} />
         </mesh>
       ))}
     </group>
@@ -107,7 +107,9 @@ export function POI({ poi, onPoi }: { poi: Poi; onPoi: (p: Poi) => void }) {
   const rotationY = Math.atan2(PLAZA[0] - x, PLAZA[1] - z);
   const [survole, setSurvole] = useState(false);
   const refGroupe = useRef<THREE.Group>(null);
-  const cliquable = poi.type.startsWith("stand");
+  // Tous les POI ouvrent désormais une analyse thématique (stands → scénarios,
+  // toilettes → allocation, secours → anomalies), donc tous sont cliquables.
+  const cliquable = true;
 
   useFrame((_, dt) => {
     if (refGroupe.current) {
@@ -116,7 +118,7 @@ export function POI({ poi, onPoi }: { poi: Poi; onPoi: (p: Poi) => void }) {
     }
   });
 
-  let objet = <Kiosque accent="#c98500" />;
+  let objet = <Kiosque accent="#ff7a18" />;
   if (poi.type === "stand_nourriture") objet = <FoodTruck />;
   if (poi.type === "toilettes") objet = <Toilettes />;
   if (poi.type === "secourisme") objet = <Secours />;

@@ -14,7 +14,7 @@ export function Paths({ pois }: { pois: Poi[] }) {
     const geometries: { geo: THREE.BufferGeometry; teinte: string }[] = [];
 
     const principal = (a: [number, number], b: [number, number], largeur: number) =>
-      geometries.push({ geo: geometrieRuban(courbeEntre(a, b, 0.05, 0.1), largeur), teinte: "#1e2534" });
+      geometries.push({ geo: geometrieRuban(courbeEntre(a, b, 0.05, 0.1), largeur), teinte: "#2a1c14" });
 
     principal(ENTREE, PLAZA, 5.2);
     Object.values(POSITIONS).forEach((p) => principal(PLAZA, monde(...p), 3.4));
@@ -28,14 +28,14 @@ export function Paths({ pois }: { pois: Poi[] }) {
       geometries.push({
         geo: geometrieRuban(
           courbeEntre(monde(...POSITIONS[a]), monde(...POSITIONS[b]), 0.05), 2.6),
-        teinte: "#1a202d",
+        teinte: "#241811",
       }),
     );
 
     pois.forEach((p) =>
       geometries.push({
         geo: geometrieRuban(courbeEntre(PLAZA, monde(p.x, p.y), 0.04, 0.06), 1.3),
-        teinte: "#181e2a",
+        teinte: "#201610",
       }),
     );
 
@@ -46,7 +46,7 @@ export function Paths({ pois }: { pois: Poi[] }) {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[PLAZA[0], 0.04, PLAZA[1]]}>
         <circleGeometry args={[9, 36]} />
-        <meshStandardMaterial color="#20283a" roughness={0.95} />
+        <meshStandardMaterial color="#2b1d14" roughness={0.95} />
       </mesh>
       {rubans.map((r, i) => (
         <mesh key={i} geometry={r.geo} receiveShadow>

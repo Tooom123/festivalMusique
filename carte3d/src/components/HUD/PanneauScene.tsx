@@ -11,11 +11,12 @@ interface Props {
   noms: Record<number, string>;
   set: Concert | undefined;
   onFermer: () => void;
+  onAnalyse?: () => void;
 }
 
 // Panneau de details affiche a la selection d'une scene : affluence,
 // evolution vs creneau precedent, flux entrants / sortants, set en cours.
-export function PanneauScene({ etat, delta, creneau, flux, noms, set, onFermer }: Props) {
+export function PanneauScene({ etat, delta, creneau, flux, noms, set, onFermer, onAnalyse }: Props) {
   const nb = useNombreAmorti(etat.nb);
   const entrants = flux.filter((f) => f.scene_destination === etat.sceneId);
   const sortants = flux.filter((f) => f.scene_origine === etat.sceneId);
@@ -76,6 +77,12 @@ export function PanneauScene({ etat, delta, creneau, flux, noms, set, onFermer }
 
       {etat.aAnomalie && (
         <div className="c3d-panneau-alerte">Anomalie détectée sur ce créneau</div>
+      )}
+
+      {onAnalyse && (
+        <button className="c3d-panneau-analyse" onClick={onAnalyse}>
+          Affluence &amp; prévision de la scène
+        </button>
       )}
     </div>
   );

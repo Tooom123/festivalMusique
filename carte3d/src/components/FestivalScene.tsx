@@ -23,12 +23,13 @@ interface Props {
   declencheurFocus: number;
   onScene: (sceneId: number) => void;
   onPoi: (poi: Poi) => void;
+  onEntree?: () => void;
 }
 
 // Assemblage de la scene 3D complete. Les etats (affluence, flux, anomalies)
 // arrivent deja calcules par useFestivalData : ce composant ne fait que
 // les afficher.
-export function FestivalScene({ scenes, flux, pois, selection, declencheurFocus, onScene, onPoi }: Props) {
+export function FestivalScene({ scenes, flux, pois, selection, declencheurFocus, onScene, onPoi, onEntree }: Props) {
   const courbeEntree = useMemo(
     () => courbeEntre(monde(50, 2), monde(50, 40), 0.12, 0),
     [],
@@ -43,7 +44,7 @@ export function FestivalScene({ scenes, flux, pois, selection, declencheurFocus,
   return (
     <group>
       <Lights />
-      <Terrain />
+      <Terrain onEntree={onEntree} />
       <Paths pois={pois} />
       <Installations />
 

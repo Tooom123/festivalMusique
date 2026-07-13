@@ -1,21 +1,22 @@
 const C = {
-  scene: { 1: "#3987e5", 2: "#199e70", 3: "#c98500" },
-  jours: ["#3987e5", "#199e70", "#c98500"],
-  grav: { haute: "#d03b3b", moyenne: "#ec835a", basse: "#fab219" },
-  seq: ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"],
-  axe: "#8b8ba0",
-  grille: "#1e1e2a",
-  texte: "#a9a9be",
-  fondTooltip: "#15151f",
+  scene: { 1: "#e63419", 2: "#ff7a18", 3: "#ffb300" },
+  jours: ["#e63419", "#ff7a18", "#ffb300"],
+  grav: { haute: "#e02718", moyenne: "#ff7a18", basse: "#ffb300" },
+  seq: ["#3a1207", "#6b1e08", "#a8300c", "#e63419", "#ff5a12", "#ff9a3c", "#ffce5c"],
+  axe: "#9c7a6d",
+  grille: "#2a1610",
+  texte: "#c9a99b",
+  fondTooltip: "#1a0d08",
+  froid: "#5aa0d6",
 };
 
 const POSITIONS = { 1: [50, 76], 2: [20, 30], 3: [80, 30] };
 const STYLES_POI = {
-  stand_boisson: ["diamond", "#c98500"],
-  stand_nourriture: ["diamond", "#c98500"],
-  stand_mixte: ["diamond", "#c98500"],
-  toilettes: ["rect", "#6da7ec"],
-  secourisme: ["pin", "#199e70"],
+  stand_boisson: ["diamond", "#ff7a18"],
+  stand_nourriture: ["diamond", "#ff7a18"],
+  stand_mixte: ["diamond", "#ff7a18"],
+  toilettes: ["rect", "#ffb300"],
+  secourisme: ["pin", "#e02718"],
 };
 const LIBELLES_VARIABLES = {
   lag1: "affluence créneau -1", lag2: "affluence créneau -2", heure: "heure",
@@ -50,13 +51,6 @@ function couleurTaux(t) {
 function creneauxDuJour(jour) {
   return [...new Set(DONNEES.affluence.filter((a) => a.jour === jour).map((a) => a.creneau))].sort((a, b) => a - b);
 }
-
-const graphs = {};
-function graphe(id) {
-  if (!graphs[id]) graphs[id] = echarts.init(document.getElementById(id));
-  return graphs[id];
-}
-window.addEventListener("resize", () => Object.values(graphs).forEach((g) => g.resize()));
 
 function axesBase() {
   return {
@@ -116,43 +110,85 @@ function animeCompteurs(conteneur) {
   });
 }
 
-/* ================= Navigation ================= */
+/* ================= Drawer d'analyse ================= */
 
-const initialisees = {};
-const INIT = {
-  accueil: initAccueil, programmation: initProgrammation, carte: initCarte,
-  affluence: initAffluence, previsions: initPrevisions, anomalies: initAnomalies,
-  allocation: initAllocation, recommandations: initRecommandations, scenarios: initScenarios,
+// Chaque cle d'analyse -> gabarit HTML, titres, et fonction d'init a lancer une
+// fois le contenu injecte dans le drawer. `contexte` porte la scene cliquee.
+const ANALYSES = {
+  ensemble: { gabarit: "gabarit-ensemble", surtitre: "Le festival", titre: "Vue d'ensemble",
+              init: initEnsemble },
+  affluence: { gabarit: "gabarit-affluence", surtitre: "Scène", titre: "Affluence & prévision",
+               init: initAffluence },
+  previsions: { gabarit: "gabarit-previsions", surtitre: "Modèles", titre: "Prévision de l'édition",
+                init: initPrevisionsEdition },
+  anomalies: { gabarit: "gabarit-anomalies", surtitre: "Poste de secours", titre: "Anomalies & anticipation",
+               init: initAnomalies },
+  allocation: { gabarit: "gabarit-allocation", surtitre: "Sanitaires & équipes", titre: "Allocation des ressources",
+                init: initAllocation },
+  transport: { gabarit: "gabarit-transport", surtitre: "Entrée du site", titre: "Transport & billetterie",
+               init: initTransport },
+  scenarios: { gabarit: "gabarit-scenarios", surtitre: "Stands & food", titre: "Scénarios & coûts",
+               init: initScenarios },
 };
 
-function afficherPage(nom) {
-  document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("actif", b.dataset.page === nom));
-  document.querySelectorAll(".page").forEach((p) => p.classList.toggle("actif", p.id === "page-" + nom));
-  fermerMenu();
-  window.scrollTo({ top: 0, behavior: "instant" });
-  if (!initialisees[nom]) { initialisees[nom] = true; INIT[nom](); }
-  else requestAnimationFrame(() => Object.values(graphs).forEach((g) => g.resize()));
+// Registre des instances ECharts. Les conteneurs vivent dans le drawer et sont
+// recrees a chaque ouverture : on dispose l'ancienne instance avant d'en refaire.
+const graphs = {};
+function graphe(id) {
+  const el = document.getElementById(id);
+  if (graphs[id] && graphs[id].getDom() !== el) { graphs[id].dispose(); delete graphs[id]; }
+  if (!graphs[id]) graphs[id] = echarts.init(el);
+  return graphs[id];
+}
+window.addEventListener("resize", () =>
+  Object.values(graphs).forEach((g) => { try { g.resize(); } catch (e) {} }));
+
+const drawer = document.getElementById("drawer");
+const drawerVoile = document.getElementById("drawer-voile");
+const drawerCorps = document.getElementById("drawer-corps");
+let analyseCourante = null;
+
+function ouvrirDrawer(cle, contexte) {
+  const conf = ANALYSES[cle];
+  if (!conf) return;
+  contexte = contexte || {};
+
+  // Contenu neuf : on jette les anciennes instances ECharts et on clone le gabarit.
+  Object.keys(graphs).forEach((id) => { graphs[id].dispose(); delete graphs[id]; });
+  drawerCorps.innerHTML = "";
+  const gabarit = document.getElementById(conf.gabarit);
+  drawerCorps.appendChild(gabarit.content.cloneNode(true));
+
+  const surtitre = contexte.nomScene || conf.surtitre;
+  document.getElementById("drawer-surtitre").textContent = surtitre;
+  document.getElementById("drawer-titre").textContent = conf.titre;
+
+  analyseCourante = cle;
+  conf.init(contexte);
+
+  document.body.classList.add("drawer-ouvert");
+  drawer.setAttribute("aria-hidden", "false");
+  document.getElementById("indice-carte").classList.add("masque");
+  drawerCorps.scrollTop = 0;
+  requestAnimationFrame(() =>
+    Object.values(graphs).forEach((g) => { try { g.resize(); } catch (e) {} }));
 }
 
-document.querySelectorAll(".nav-item").forEach((b) =>
-  b.addEventListener("click", () => afficherPage(b.dataset.page)));
+function fermerDrawer() {
+  document.body.classList.remove("drawer-ouvert");
+  drawer.setAttribute("aria-hidden", "true");
+  analyseCourante = null;
+}
 
-const sidebar = document.getElementById("sidebar");
-const boutonMenu = document.getElementById("bouton-menu");
-const voile = document.getElementById("voile");
-boutonMenu.addEventListener("click", () => {
-  sidebar.classList.add("ouvert");
-  document.body.classList.add("menu-ouvert");
+document.getElementById("drawer-fermer").addEventListener("click", fermerDrawer);
+drawerVoile.addEventListener("click", fermerDrawer);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.body.classList.contains("drawer-ouvert")) fermerDrawer();
 });
-voile.addEventListener("click", fermerMenu);
-function fermerMenu() {
-  sidebar.classList.remove("ouvert");
-  document.body.classList.remove("menu-ouvert");
-}
 
-/* ================= Accueil ================= */
+/* ================= Vue d'ensemble ================= */
 
-function initAccueil() {
+function initEnsemble() {
   const conteneur = document.getElementById("headliners");
   [1, 2, 3].forEach((jour) => {
     const prog = DONNEES.programmation
@@ -160,7 +196,7 @@ function initAccueil() {
       .sort((a, b) => b.popularite - a.popularite || b.heure_debut - a.heure_debut)
       .slice(0, 3);
     const carte = document.createElement("div");
-    carte.className = "jour-carte revele";
+    carte.className = "jour-carte";
     carte.innerHTML = `<div class="jour-nom">${jourLong(jour)}</div>` +
       `<div class="jour-note">${fmt(DONNEES.kpi.visiteurs_par_jour[String(jour)])} festivaliers attendus</div>` +
       `<div class="artistes">` + prog.map((p, i) => {
@@ -186,11 +222,6 @@ function initAccueil() {
     carteKpi("Erreur de prévision (MAE)", `<span data-compte="${Math.round(m.mae_retenue)}">0</span>`, `R² = ${m.r2_retenu.toFixed(2)}`) +
     carteKpi("Couverture des besoins", `${DONNEES.allocation.couverture_ajustee.toFixed(0)} %`, "après réallocation");
   animeCompteurs(document.getElementById("kpi-accueil"));
-
-  const observateur = new IntersectionObserver((entrees) => {
-    entrees.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("visible"); observateur.unobserve(e.target); } });
-  }, { threshold: 0.12 });
-  document.querySelectorAll(".revele").forEach((el) => observateur.observe(el));
 
   const creneaux = creneauxDuJour(1);
   const heures = creneaux.map(heureTexte);
@@ -228,14 +259,13 @@ function initAccueil() {
       data: [1, 2, 3].map((jour) => DONNEES.anomalies.filter((a) => a.jour === jour && a.gravite === g).length),
     })),
   });
-}
 
-/* ================= Programmation ================= */
-
-function initProgrammation() {
+  // Programmation (segment jour) intégrée à la vue d'ensemble.
   creerSegments("seg-prog", [1, 2, 3].map((j) => ({ label: jourLong(j), valeur: j })), dessineProgrammation, 0);
   dessineProgrammation(1);
 }
+
+/* ================= Programmation ================= */
 
 function dessineProgrammation(jour) {
   const prog = DONNEES.programmation.filter((p) => p.jour === jour);
@@ -300,7 +330,20 @@ function dessineProgrammation(jour) {
   document.getElementById("table-prog").innerHTML = html + "</tbody></table>";
 }
 
-/* ================= Carte du site ================= */
+/* ================= Carte du site (fond permanent) ================= */
+
+// La carte 3D occupe tout l'écran et pilote la navigation : cliquer une scène
+// ou un décor ouvre l'analyse thématique correspondante dans le drawer.
+// Mapping type de POI -> clé d'analyse (voir ANALYSES). Un type non listé (les
+// stands de nourriture/boisson/mixte) tombe sur les scénarios & coûts.
+const POI_VERS_ANALYSE = {
+  secourisme: "anomalies",
+  toilettes: "allocation",
+  stand_boisson: "scenarios",
+  stand_nourriture: "scenarios",
+  stand_mixte: "scenarios",
+  entree: "transport",
+};
 
 let jourCarte = 2;
 let editionCarte = null;
@@ -312,29 +355,24 @@ function editionCourante() {
     || DONNEES.cartes_editions[DONNEES.cartes_editions.length - 1];
 }
 
-function initCarte() {
-  const editions = DONNEES.cartes_editions;
-  editionCarte = editions[editions.length - 1].annee;
+// Clic sur une scène : on ouvre l'analyse affluence/prévision filtrée sur la scène.
+function ouvreAnalyseScene(sceneId) {
+  ouvrirDrawer("affluence", { sceneId, nomScene: NOMS_SCENES[sceneId] });
+}
 
-  creerSegments("seg-edition", editions.map((e) => ({
-    label: e.type === "prediction" ? e.annee + " · Prédiction" : String(e.annee),
-    valeur: e.annee,
-  })), (a) => { editionCarte = a; changeEditionCarte(a); }, editions.length - 1);
-
-  creerSegments("seg-carte", [1, 2, 3].map((j) => ({ label: jourLong(j), valeur: j })),
-    (j) => { jourCarte = j; changeJourCarte(j); }, 1);
-
-  document.getElementById("detail-fermer").addEventListener("click", () => {
-    document.getElementById("panneau-detail").hidden = true;
-  });
-
-  monteCarte();
+// Clic sur un décor / POI : route vers l'analyse thématique.
+function ouvreAnalysePoi(poi) {
+  const cle = POI_VERS_ANALYSE[poi.type] || "scenarios";
+  ouvrirDrawer(cle, { nomPoi: poi.nom });
 }
 
 function monteCarte() {
+  const editions = DONNEES.cartes_editions;
+  editionCarte = editions[editions.length - 1].annee;
+
   if (window.Carte3D) {
     try {
-      carte3dApi = Carte3D.monte(document.getElementById("graph-carte"), {
+      carte3dApi = Carte3D.monte(document.getElementById("carte-plein"), {
         donnees: {
           scenes: DONNEES.scenes,
           pois: DONNEES.pois,
@@ -343,40 +381,53 @@ function monteCarte() {
         },
         edition: editionCarte,
         jour: jourCarte,
-        onScene: (id) => montrerProgrammeScene(id),
-        onPoi: (p) => montrerDetailPoi(p),
+        onScene: (id) => ouvreAnalyseScene(id),
+        onPoi: (p) => ouvreAnalysePoi(p),
+        onEnsemble: () => ouvrirDrawer("ensemble"),
+        onEntree: () => ouvrirDrawer("transport", { nomPoi: "Entrée du site" }),
       });
-      majInfosCarte();
       return;
     } catch (e) {
       console.error("Carte 3D indisponible, repli sur la carte 2D", e);
       carte3dApi = null;
     }
   }
+  monteCarte2D();
+}
+
+// Repli 2D (WebGL indisponible) : carte ECharts plein hôte + sélecteurs superposés.
+function monteCarte2D() {
+  const hote = document.getElementById("carte-plein");
+  hote.innerHTML =
+    `<div id="graph-carte-2d"></div>
+     <button class="c3d-bouton-ensemble" id="btn-ensemble-2d">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+       <span>Vue d'ensemble</span>
+     </button>
+     <div class="c3d-selecteurs">
+       <span class="c3d-badge-edition" id="badge-edition-2d"></span>
+       <div class="segments segments-edition" id="seg-edition"></div>
+       <div class="segments" id="seg-carte"></div>
+     </div>`;
+  document.getElementById("btn-ensemble-2d").addEventListener("click", () => ouvrirDrawer("ensemble"));
+
+  const editions = DONNEES.cartes_editions;
+  creerSegments("seg-edition", editions.map((e) => ({
+    label: e.type === "prediction" ? e.annee + " · Préd." : String(e.annee),
+    valeur: e.annee,
+  })), (a) => { editionCarte = a; dessineCarte2D(); }, editions.length - 1);
+  creerSegments("seg-carte", [1, 2, 3].map((j) => ({ label: jourCourt(j), valeur: j })),
+    (j) => { jourCarte = j; dessineCarte2D(); }, 1);
+
   dessineCarte2D();
 }
 
-function changeEditionCarte(a) {
-  if (carte3dApi) { carte3dApi.setEdition(a); majInfosCarte(); }
-  else dessineCarte2D();
-}
-
-function changeJourCarte(jour) {
-  if (carte3dApi) { carte3dApi.setJour(jour); majInfosCarte(); }
-  else dessineCarte2D();
-}
-
-function majInfosCarte() {
+function majBadge2D() {
   const ed = editionCourante();
-  const aff = ed.affluence.filter((a) => a.jour === jourCarte);
-  const pic = Math.max(...aff.map((a) => a.nb_visiteurs));
-  const nbAnos = ed.anomalies.filter((a) => a.jour === jourCarte).length;
-  const badge = ed.type === "prediction"
-    ? `<span class="carte-badge pred">Prédiction ${ed.annee}</span>`
-    : `<span class="carte-badge hist">Déroulé réel ${ed.annee}</span>`;
-  document.getElementById("kpi-carte").innerHTML =
-    `${badge}<span><b>${fmt(pic)}</b> pic du jour</span><span><b>${nbAnos}</b> anomalies</span>`;
-  document.getElementById("panneau-detail").hidden = true;
+  const badge = document.getElementById("badge-edition-2d");
+  if (!badge) return;
+  badge.className = "c3d-badge-edition " + (ed.type === "prediction" ? "pred" : "hist");
+  badge.textContent = ed.type === "prediction" ? `Prédiction ${ed.annee}` : `Réel ${ed.annee}`;
 }
 
 function seriesCarte(jour, creneau) {
@@ -420,13 +471,13 @@ function seriesCarte(jour, creneau) {
       label: { show: true, formatter: "Entrée", color: C.axe, fontSize: 11, position: "bottom" },
       data: [[50, 2]] },
     { id: "flux", type: "lines", coordinateSystem: "cartesian2d", z: 2, silent: true,
-      lineStyle: { color: "rgba(79,124,255,0.45)", curveness: 0.12 },
-      effect: mouvementReduit ? { show: false } : { show: true, period: 3.2, trailLength: 0.3, symbolSize: 4, color: "#9db8ff" },
+      lineStyle: { color: "rgba(255,122,24,0.45)", curveness: 0.12 },
+      effect: mouvementReduit ? { show: false } : { show: true, period: 3.2, trailLength: 0.3, symbolSize: 4, color: "#ffb300" },
       data: fluxData },
     { id: "pois", type: "scatter", z: 3, cursor: "pointer", data: poisData },
     { id: "scenes", type: "scatter", z: 5, cursor: "pointer", data: scenesData },
     { id: "anoms", type: "scatter", z: 6, symbol: "triangle", symbolSize: 15,
-      itemStyle: { color: C.grav.haute, borderColor: "#08080d", borderWidth: 1 }, data: anomsData },
+      itemStyle: { color: C.grav.haute, borderColor: "#0a0505", borderWidth: 1 }, data: anomsData },
   ];
 }
 
@@ -434,11 +485,11 @@ function dessineCarte2D() {
   const jour = jourCarte;
   const ed = editionCourante();
   const creneaux = [...new Set(ed.affluence.filter((a) => a.jour === jour).map((a) => a.creneau))].sort((a, b) => a - b);
-  const g = graphe("graph-carte");
+  const g = graphe("graph-carte-2d");
   if (!clicCarte2dLie) {
     g.on("click", (params) => {
-      if (params.seriesId === "scenes") montrerProgrammeScene(params.data.sceneId);
-      if (params.seriesId === "pois") montrerDetailPoi(params.data.poi);
+      if (params.seriesId === "scenes") ouvreAnalyseScene(params.data.sceneId);
+      if (params.seriesId === "pois") ouvreAnalysePoi(params.data.poi);
     });
     clicCarte2dLie = true;
   }
@@ -453,11 +504,11 @@ function dessineCarte2D() {
         loop: false,
         bottom: 4, left: 30, right: 30,
         label: { color: C.axe, fontSize: 10 },
-        lineStyle: { color: "#2b2b3d" },
-        itemStyle: { color: "#4a4a60" },
-        checkpointStyle: { color: "#4f7cff", borderColor: "rgba(79,124,255,0.35)", symbolSize: 14 },
-        progress: { lineStyle: { color: "#4f7cff" }, itemStyle: { color: "#4f7cff" } },
-        controlStyle: { color: "#d7d7e4", borderColor: "#4a4a60" },
+        lineStyle: { color: "#3a2016" },
+        itemStyle: { color: "#6b3f2a" },
+        checkpointStyle: { color: "#ff7a18", borderColor: "rgba(255,122,24,0.35)", symbolSize: 14 },
+        progress: { lineStyle: { color: "#ff7a18" }, itemStyle: { color: "#ff7a18" } },
+        controlStyle: { color: "#f7ece6", borderColor: "#6b3f2a" },
       },
       tooltip: {
         ...tooltipBase(),
@@ -465,11 +516,10 @@ function dessineCarte2D() {
           if (pa.seriesId === "scenes") {
             return `<b>${NOMS_SCENES[pa.data.sceneId]}</b><br>${fmt(pa.data.nb)} visiteurs<br>` +
               `Occupation : ${Math.round(pa.data.taux * 100)} %<br>Capacité : ${fmt(CAPACITES[pa.data.sceneId])}<br>` +
-              `<i>Cliquer pour voir le programme</i>`;
+              `<i>Cliquer pour l'affluence & la prévision</i>`;
           }
           if (pa.seriesId === "pois") {
-            const p = pa.data.poi;
-            return DONNEES.menus[p.type] ? `<b>${p.nom}</b><br><i>Cliquer pour voir la carte</i>` : `<b>${p.nom}</b>`;
+            return `<b>${pa.data.poi.nom}</b><br><i>Cliquer pour l'analyse</i>`;
           }
           if (pa.seriesId === "anoms") return `Anomalie : ${pa.data.type} (${pa.data.gravite})`;
           return "";
@@ -483,50 +533,53 @@ function dessineCarte2D() {
     options: creneaux.map((cr) => ({ series: seriesCarte(jour, cr) })),
   }, true);
 
-  majInfosCarte();
+  majBadge2D();
 }
 
-function montrerProgrammeScene(sceneId) {
-  const ed = editionCourante();
-  document.getElementById("detail-titre").textContent =
-    `${NOMS_SCENES[sceneId]} · ${jourLong(jourCarte)}`;
-  if (ed.type === "prediction") {
-    const prog = ed.programmation
-      .filter((p) => p.jour === jourCarte && p.scene_id === sceneId)
-      .sort((a, b) => a.heure_debut - b.heure_debut);
-    document.getElementById("detail-corps").innerHTML =
-      "<table><thead><tr><th>Horaire</th><th>Artiste</th><th>Notoriété</th></tr></thead><tbody>" +
-      prog.map((p) => `<tr><td>${heureTexte(p.heure_debut)} – ${heureTexte(p.heure_fin)}</td>` +
-        `<td>${p.artiste}</td><td>${p.popularite}/10</td></tr>`).join("") +
-      "</tbody></table>";
-  } else {
-    document.getElementById("detail-corps").innerHTML =
-      `<p style="color:var(--texte-2)">Édition passée : l'affluence est rejouée d'après ` +
-      `l'historique ${ed.annee}. La programmation d'époque n'est pas conservée.</p>`;
+/* ================= Affluence & prévision (clic sur une scène) ================= */
+
+function initAffluence(contexte) {
+  contexte = contexte || {};
+  // Intro adaptée à la scène cliquée.
+  if (contexte.nomScene) {
+    document.getElementById("affluence-intro").innerHTML =
+      `Fréquentation observée par scène, issue de la simulation à événements discrets. ` +
+      `Vous avez cliqué <b>${contexte.nomScene}</b> — sa prévision par créneau de 30 min ` +
+      `pour le dimanche est présélectionnée ci-dessous.`;
   }
-  const panneau = document.getElementById("panneau-detail");
-  panneau.hidden = false;
-  panneau.scrollIntoView({ behavior: mouvementReduit ? "instant" : "smooth", block: "nearest" });
-}
 
-function montrerDetailPoi(poi) {
-  const menu = DONNEES.menus[poi.type];
-  document.getElementById("detail-titre").textContent = poi.nom;
-  document.getElementById("detail-corps").innerHTML = menu
-    ? "<table><thead><tr><th>Produit</th><th>Prix</th></tr></thead><tbody>" +
-      menu.map((l) => `<tr><td>${l[0]}</td><td>${l[1].toFixed(2).replace(".", ",")} €</td></tr>`).join("") +
-      "</tbody></table>"
-    : `<p style="color:var(--texte-2)">Point d'intérêt du site.</p>`;
-  const panneau = document.getElementById("panneau-detail");
-  panneau.hidden = false;
-  panneau.scrollIntoView({ behavior: mouvementReduit ? "instant" : "smooth", block: "nearest" });
-}
-
-/* ================= Affluence ================= */
-
-function initAffluence() {
   creerSegments("seg-affluence", [1, 2, 3].map((j) => ({ label: jourLong(j), valeur: j })), dessineAffluence, 0);
   dessineAffluence(1);
+
+  // Bloc prévision par scène/créneau (déplacé ici : la scène est le point d'entrée).
+  const m = DONNEES.metriques;
+  const retenuForet = m.modele_retenu === "foret aleatoire";
+  const nomRetenu = retenuForet ? "forêt aléatoire" : "régression linéaire";
+  document.getElementById("kpi-previsions").innerHTML =
+    carteKpi("MAE modèle retenu", m.mae_retenue.toFixed(1), `${nomRetenu} · R² ${m.r2_retenu.toFixed(3)}`, "positif") +
+    carteKpi("MAE modèle naïf", m.mae_naif.toFixed(1), "créneau précédent") +
+    carteKpi("Apport de l'historique",
+      `-${((1 - m.mae_retenue / m.mae_sans_historique) * 100).toFixed(0)} %`,
+      `grâce aux éditions 2022-2025`, "positif");
+
+  const scenePref = contexte.sceneId || 1;
+  const idxScene = [1, 2, 3].indexOf(scenePref);
+  creerSegments("seg-previsions", [1, 2, 3].map((s) => ({ label: NOMS_SCENES[s], valeur: s })),
+    dessinePrevisions, idxScene >= 0 ? idxScene : 0);
+  dessinePrevisions(scenePref);
+
+  const imp = [...DONNEES.importances].sort((a, b) => b.importance - a.importance);
+  graphe("graph-importances").setOption({
+    tooltip: { ...tooltipBase(), valueFormatter: (v) => v.toFixed(3) },
+    grid: { left: 170, right: 30, top: 10, bottom: 30 },
+    xAxis: { type: "value", ...axesBase() },
+    yAxis: { type: "category", inverse: true,
+      data: imp.map((i) => LIBELLES_VARIABLES[i.variable] || i.variable),
+      axisLabel: { color: C.texte, fontSize: 12 }, axisLine: { show: false }, axisTick: { show: false } },
+    series: [{ type: "bar", barWidth: "55%",
+      itemStyle: { color: C.accent || "#e63419", borderRadius: [0, 5, 5, 0] },
+      data: imp.map((i) => i.importance) }],
+  });
 }
 
 function dessineAffluence(jour) {
@@ -574,7 +627,7 @@ function dessineAffluence(jour) {
       formatter: (v) => Math.round(v * 100) + " %",
     },
     series: [{ type: "heatmap", data: donneesHeat,
-      itemStyle: { borderColor: "#0d0e16", borderWidth: 2, borderRadius: 3 },
+      itemStyle: { borderColor: "#0a0505", borderWidth: 2, borderRadius: 3 },
       emphasis: { itemStyle: { borderColor: "#fff", borderWidth: 1 } } }],
   }, true);
 }
@@ -625,17 +678,19 @@ function dessineEditions() {
       { name: "Fréquentation réelle", type: "bar", barWidth: "46%",
         data: annees.map((a) => ({
           value: a === 2026 ? reel2026 : parAnnee[a],
-          itemStyle: { color: a === 2026 ? "#3987e5" : "#31415f", borderRadius: [6, 6, 0, 0] },
+          itemStyle: { color: a === 2026 ? "#ff7a18" : "#5a3220", borderRadius: [6, 6, 0, 0] },
         })) },
       { name: "Prévision combinée (tendance + billetterie)", type: "scatter", symbol: "diamond", symbolSize: 16,
-        itemStyle: { color: "#e66767", borderColor: "#0d0e16", borderWidth: 1.5 },
+        itemStyle: { color: "#ffce5c", borderColor: "#0a0505", borderWidth: 1.5 },
         data: annees.map((a) => (a === 2026 ? combinee2026 : null)) },
     ],
   });
 }
 
-function dessineBilletterie() {
-  document.getElementById("billetterie-panneau").innerHTML = DONNEES.prevision_edition
+function dessineBilletterie(idCible) {
+  const cible = document.getElementById(idCible || "billetterie-panneau");
+  if (!cible) return;
+  cible.innerHTML = DONNEES.prevision_edition
     .map((l) => {
       const pct = Math.round(l.part_vendue * 100);
       const classe = pct >= 90 ? "haut" : pct >= 65 ? "moyen" : "bas";
@@ -649,40 +704,10 @@ function dessineBilletterie() {
     .join("");
 }
 
-function initPrevisions() {
-  const m = DONNEES.metriques;
-  const retenuForet = m.modele_retenu === "foret aleatoire";
-  const nomRetenu = retenuForet ? "forêt aléatoire" : "régression linéaire";
-  const nomAutre = retenuForet ? "régression linéaire" : "forêt aléatoire";
-  const maeAutre = retenuForet ? m.mae_lineaire : m.mae_foret;
-  const gainHistorique = (1 - m.mae_retenue / m.mae_sans_historique) * 100;
-
-  document.getElementById("kpi-previsions").innerHTML =
-    carteKpi("MAE modèle retenu", m.mae_retenue.toFixed(1),
-      `${nomRetenu} · R² ${m.r2_retenu.toFixed(3)}`, "positif") +
-    carteKpi(`MAE ${nomAutre}`, maeAutre.toFixed(1), "comparatif") +
-    carteKpi("MAE modèle naïf", m.mae_naif.toFixed(1), "créneau précédent") +
-    carteKpi("Apport de l'historique", `-${gainHistorique.toFixed(0)} %`,
-      `MAE ${m.mae_sans_historique.toFixed(0)} → ${m.mae_retenue.toFixed(0)} grâce aux éditions 2022-2025`,
-      "positif");
-
+// Prévision de l'édition (tendance + billetterie) — ouverte depuis la Vue d'ensemble.
+function initPrevisionsEdition() {
   dessineEditions();
   dessineBilletterie();
-  creerSegments("seg-previsions", [1, 2, 3].map((s) => ({ label: NOMS_SCENES[s], valeur: s })), dessinePrevisions, 0);
-  dessinePrevisions(1);
-
-  const imp = [...DONNEES.importances].sort((a, b) => b.importance - a.importance);
-  graphe("graph-importances").setOption({
-    tooltip: { ...tooltipBase(), valueFormatter: (v) => v.toFixed(3) },
-    grid: { left: 170, right: 30, top: 10, bottom: 30 },
-    xAxis: { type: "value", ...axesBase() },
-    yAxis: { type: "category", inverse: true,
-      data: imp.map((i) => LIBELLES_VARIABLES[i.variable] || i.variable),
-      axisLabel: { color: C.texte, fontSize: 12 }, axisLine: { show: false }, axisTick: { show: false } },
-    series: [{ type: "bar", barWidth: "55%",
-      itemStyle: { color: "#3987e5", borderRadius: [0, 5, 5, 0] },
-      data: imp.map((i) => i.importance) }],
-  });
 }
 
 function dessinePrevisions(sceneId) {
@@ -699,10 +724,10 @@ function dessinePrevisions(sceneId) {
     yAxis: { type: "value", name: "Visiteurs", nameTextStyle: { color: C.axe }, ...axesBase() },
     series: [
       { name: "Observé", type: "line", smooth: 0.25, showSymbol: false,
-        lineStyle: { width: 2.5, color: "#3987e5" }, itemStyle: { color: "#3987e5" },
+        lineStyle: { width: 2.5, color: "#ff7a18" }, itemStyle: { color: "#ff7a18" },
         data: lignes.map((l) => l.nb_visiteurs) },
       { name: "Prévu", type: "line", smooth: 0.25, showSymbol: false,
-        lineStyle: { width: 2.5, color: "#e66767", type: "dashed" }, itemStyle: { color: "#e66767" },
+        lineStyle: { width: 2.5, color: "#5aa0d6", type: "dashed" }, itemStyle: { color: "#5aa0d6" },
         data: lignes.map((l) => l.prevision) },
     ],
   }, true);
@@ -809,7 +834,13 @@ function initAllocation() {
   dessineAllocation(types[0]);
 
   dessineDimensionnement();
+}
+
+/* ================= Transport & billetterie (clic sur l'entrée) ================= */
+
+function initTransport() {
   dessineTransport();
+  dessineBilletterie("billetterie-panneau-t");
 }
 
 const LIBELLES_DOMAINE = { securite: "Sécurité", food: "Food", sanitaire: "Sanitaire",
@@ -836,10 +867,10 @@ function dessineTransport() {
       splitLine: { lineStyle: { color: C.grille } } },
     series: [
       { name: "Arrivées", type: "bar", barWidth: "40%", barGap: "0%",
-        itemStyle: { color: "#3987e5", borderRadius: [3, 3, 0, 0] },
+        itemStyle: { color: "#5aa0d6", borderRadius: [3, 3, 0, 0] },
         data: flux.map((f) => f.arrivees) },
       { name: "Départs", type: "bar", barWidth: "40%",
-        itemStyle: { color: "#c98500", borderRadius: [3, 3, 0, 0] },
+        itemStyle: { color: "#ff7a18", borderRadius: [3, 3, 0, 0] },
         data: flux.map((f) => f.departs),
         markLine: { silent: true, symbol: "none",
           lineStyle: { color: C.texte, type: "dashed", width: 1 },
@@ -851,7 +882,7 @@ function dessineTransport() {
 
   document.getElementById("transport-resume").innerHTML =
     `<div class="dim-ligne"><span class="dim-domaine">Pic de départs</span>
-       <span class="dim-nombre" style="color:#c98500">${fmt(t.pic_departs)}</span>
+       <span class="dim-nombre" style="color:#ff7a18">${fmt(t.pic_departs)}</span>
        <span class="dim-note">personnes à évacuer à la clôture (~minuit)</span></div>
      <div class="dim-ligne"><span class="dim-domaine">Flotte idéale</span>
        <span class="dim-nombre">${fmt(t.flotte_ideale)}</span>
@@ -964,9 +995,9 @@ function dessineAllocation(type) {
     xAxis: { type: "category", data: parScene.map((p) => p.nom), ...axesBase(), splitLine: { show: false } },
     yAxis: { type: "value", name: "Personnel (cumul)", nameTextStyle: { color: C.axe }, ...axesBase() },
     series: [
-      { name: "Besoin", type: "bar", barWidth: "26%", itemStyle: { color: "#9ec5f4", borderRadius: [5, 5, 0, 0] },
+      { name: "Besoin", type: "bar", barWidth: "26%", itemStyle: { color: "#7a4a30", borderRadius: [5, 5, 0, 0] },
         data: parScene.map((p) => p.besoin) },
-      { name: "Alloué", type: "bar", barWidth: "26%", itemStyle: { color: "#3987e5", borderRadius: [5, 5, 0, 0] },
+      { name: "Alloué", type: "bar", barWidth: "26%", itemStyle: { color: "#ff7a18", borderRadius: [5, 5, 0, 0] },
         data: parScene.map((p) => p.alloue) },
     ],
   }, true);
@@ -1013,7 +1044,7 @@ function initScenarios() {
       splitLine: { show: false } },
     yAxis: { type: "value", axisLabel: { color: C.axe, formatter: "{value} %" }, ...axesBase() },
     series: [{ type: "bar", barWidth: "46%",
-      itemStyle: { color: "#3987e5", borderRadius: [6, 6, 0, 0] },
+      itemStyle: { color: "#e63419", borderRadius: [6, 6, 0, 0] },
       data: synthese.map((s) => Math.round(s.taux_surcharge * 1000) / 10) }],
   });
 
@@ -1025,7 +1056,7 @@ function initScenarios() {
       splitLine: { show: false } },
     yAxis: { type: "value", ...axesBase(), axisLabel: { color: C.axe, fontSize: 11, formatter: (v) => fmt(v / 1000) + " k€" } },
     series: [{ type: "bar", barWidth: "46%",
-      itemStyle: { color: "#199e70", borderRadius: [6, 6, 0, 0] },
+      itemStyle: { color: "#ffb300", borderRadius: [6, 6, 0, 0] },
       data: synthese.map((s) => s.cout_personnel) }],
   });
 
@@ -1039,7 +1070,7 @@ function initScenarios() {
     yAxis: { type: "value", min: (v) => v.min - 0.002, max: (v) => v.max + 0.002,
       axisLabel: { color: C.axe, formatter: (v) => (v * 100).toFixed(1) + " %" }, ...axesBase() },
     series: [{ type: "scatter", symbolSize: 12,
-      itemStyle: { color: "#9d5cff", opacity: 0.85, borderColor: "rgba(255,255,255,0.4)", borderWidth: 1 },
+      itemStyle: { color: "#ff9a3c", opacity: 0.85, borderColor: "rgba(255,255,255,0.4)", borderWidth: 1 },
       data: DONNEES.scenarios.details.map((d) => ({
         value: [ORDRE_SCENARIOS.indexOf(d.scenario), d.couverture_besoins], run: d.run })) }],
   });
@@ -1051,9 +1082,13 @@ function initScenarios() {
       `<td>${(s.taux_surcharge * 100).toFixed(1)} %</td><td>${s.pic_occupation.toFixed(2)}</td>` +
       `<td>${(s.couverture_besoins * 100).toFixed(1)} %</td><td>${fmt(s.cout_personnel)} €</td></tr>`).join("") +
     "</tbody></table>";
+
+  // Recommandations intégrées à la fin du panneau scénarios.
+  initRecommandations();
 }
 
 /* ================= Démarrage ================= */
 
-initialisees.accueil = true;
-initAccueil();
+// La carte 3D est le cœur du site : on la monte plein écran au chargement.
+// Les analyses s'ouvrent ensuite dans le drawer via les clics sur la carte.
+monteCarte();

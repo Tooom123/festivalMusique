@@ -1,14 +1,15 @@
-// Eclairage nocturne : hemisphere froide + lune directionnelle avec ombres
-// douces, le reste vient des materiaux emissifs (scenes, halos, enseignes).
+// Eclairage nocturne facon Hellfest : hemisphere chaude (lueur de braise) +
+// lumiere directionnelle ambree avec ombres douces ; le reste vient des
+// materiaux emissifs (scenes, halos, enseignes, portique).
 export function Lights() {
   return (
     <group>
-      <hemisphereLight args={["#27324d", "#05070a", 0.75]} />
-      <ambientLight intensity={0.14} />
+      <hemisphereLight args={["#4a2418", "#0a0503", 0.75]} />
+      <ambientLight intensity={0.16} color="#ffb37a" />
       <directionalLight
         position={[70, 95, 45]}
         intensity={0.85}
-        color="#cdd6f5"
+        color="#ffd0a0"
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-110}

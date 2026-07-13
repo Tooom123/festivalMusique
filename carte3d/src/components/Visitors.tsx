@@ -4,7 +4,7 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { aleatoire } from "../logique/geometrie";
 
-const TEINTES = ["#d7dbe8", "#a7afc4", "#7d879f", "#c2cadd"];
+const TEINTES = ["#e5d8cd", "#c8b0a0", "#a68a78", "#dcc8b8"];
 
 interface Props {
   courbe: THREE.Curve<THREE.Vector3>;
