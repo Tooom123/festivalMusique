@@ -1,15 +1,58 @@
 import { Html, Line } from "@react-three/drei";
 import { useMemo, useState } from "react";
+import * as THREE from "three";
 import { monde } from "../logique/festival";
 
-// Sol, enceinte du site et portique d'entree. Style sombre type carte de nuit.
+// Bruit deterministe (aucun alea entre rendus) pour deformer le perimetre.
+function pseudo(n: number): number {
+  const s = Math.sin(n * 127.1) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+// Perimetre irregulier du site : polygone ferme dont le rayon varie par angle
+// (site organique, non carre). Centre sur l'esplanade, en coordonnees monde.
+function perimetreIrregulier(): [number, number][] {
+  const [cx, cz] = monde(50, 45);
+  const n = 46;
+  const rayonBase = 92;
+  const pts: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    // Somme de quelques harmoniques + bruit pour une bordure sinueuse mais lisse.
+    const ondul =
+      1 +
+      0.16 * Math.sin(a * 3 + 1.7) +
+      0.1 * Math.sin(a * 5 + 4.2) +
+      0.06 * Math.cos(a * 8 + 0.5) +
+      0.09 * (pseudo(i * 1.7) - 0.5);
+    const r = rayonBase * ondul;
+    pts.push([cx + Math.cos(a) * r, cz + Math.sin(a) * r * 0.86]);
+  }
+  return pts;
+}
+
+// Sol, enceinte irreguliere du site et portique d'entree, sur fond d'enfer.
 // Le portique est cliquable : il ouvre l'analyse transport & billetterie.
 export function Terrain({ onEntree }: { onEntree?: () => void }) {
   const [survoleEntree, setSurvoleEntree] = useState(false);
-  const coins = useMemo(() => {
-    const c = [monde(-3, -1), monde(103, -1), monde(103, 95), monde(-3, 95), monde(-3, -1)];
-    return c.map(([x, z]) => [x, 0.06, z] as [number, number, number]);
-  }, []);
+
+  const contour = useMemo(perimetreIrregulier, []);
+
+  // Ligne d'enceinte (fermee) posee au sol.
+  const ligne = useMemo(
+    () => [...contour, contour[0]].map(([x, z]) => [x, 0.12, z] as [number, number, number]),
+    [contour],
+  );
+
+  // Sol du site = surface pleine du polygone irregulier (Shape extrude a plat).
+  const geoSol = useMemo(() => {
+    const forme = new THREE.Shape();
+    contour.forEach(([x, z], i) => (i === 0 ? forme.moveTo(x, z) : forme.lineTo(x, z)));
+    forme.closePath();
+    const g = new THREE.ShapeGeometry(forme);
+    g.rotateX(-Math.PI / 2);
+    return g;
+  }, [contour]);
 
   const [ex, ez] = monde(50, 2);
 
@@ -26,19 +69,20 @@ export function Terrain({ onEntree }: { onEntree?: () => void }) {
 
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 4]} receiveShadow>
-        <planeGeometry args={[250, 230]} />
-        <meshStandardMaterial color="#0d1119" roughness={1} metalness={0} />
+      {/* Sol du site (forme organique) */}
+      <mesh geometry={geoSol} position={[0, 0.02, 0]} receiveShadow>
+        <meshStandardMaterial color="#2a1a12" roughness={1} metalness={0} />
       </mesh>
 
       {herbes.map((h, i) => (
-        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[h.pos[0], 0.02, h.pos[1]]}>
+        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[h.pos[0], 0.04, h.pos[1]]}>
           <circleGeometry args={[h.rayon, 28]} />
-          <meshStandardMaterial color="#101a14" roughness={1} />
+          <meshStandardMaterial color="#33200f" roughness={1} />
         </mesh>
       ))}
 
-      <Line points={coins} color="#7a4a30" transparent opacity={0.4} lineWidth={1.5} />
+      {/* Enceinte lumineuse (braise) qui souligne la forme irreguliere */}
+      <Line points={ligne} color="#ff6a1e" transparent opacity={0.6} lineWidth={2} />
 
       <group
         position={[ex, 0, ez]}

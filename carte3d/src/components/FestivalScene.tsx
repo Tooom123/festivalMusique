@@ -6,6 +6,7 @@ import type { LigneFlux, Poi } from "../types/donnees";
 import { CameraRig } from "./CameraRig";
 import { Crowd } from "./Crowd";
 import { Effects } from "./Effects";
+import { Enfer } from "./Enfer";
 import { Flows } from "./Flows";
 import { Installations } from "./Installations";
 import { Lights } from "./Lights";
@@ -44,6 +45,7 @@ export function FestivalScene({ scenes, flux, pois, selection, declencheurFocus,
   return (
     <group>
       <Lights />
+      <Enfer />
       <Terrain onEntree={onEntree} />
       <Paths pois={pois} />
       <Installations />
