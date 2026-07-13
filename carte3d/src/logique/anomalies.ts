@@ -1,4 +1,4 @@
-import type { Anomalie, Donnees } from "../types/donnees";
+import type { Anomalie } from "../types/donnees";
 
 export interface EpisodeAnomalie {
   cle: string; // scene + type : identite de l'episode
@@ -15,14 +15,14 @@ export interface EpisodeAnomalie {
 // anomalie forment deux episodes distincts. La resolution est le premier
 // creneau ou l'anomalie n'est plus detectee (granularite 30 min du pipeline).
 export function episodesAnomalies(
-  donnees: Donnees,
+  anomalies: Anomalie[],
   jour: number,
   creneaux: number[],
 ): EpisodeAnomalie[] {
   const rang = new Map(creneaux.map((c, i) => [c, i]));
   const groupes = new Map<string, Anomalie[]>();
 
-  donnees.anomalies
+  anomalies
     .filter((a) => a.jour === jour)
     .forEach((a) => {
       const cle = a.scene_id + "|" + a.type;

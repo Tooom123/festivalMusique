@@ -675,6 +675,21 @@ tr:hover td { background: var(--surface); }
 .c3d-etiquette-scene.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .c3d-etiquette-poi { font-size: 10.5px; padding: 2px 8px; color: var(--sourdine); }
 .c3d-etiquette-entree { color: var(--texte-2); font-size: 11px; }
+.c3d-zone {
+  font-family: var(--police-texte);
+  background: rgba(10, 12, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  padding: 2px 9px;
+  color: var(--sourdine);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+}
+.c3d-zone span { color: var(--texte-2); font-weight: 600; margin-left: 3px; }
 
 .c3d-timeline {
   position: absolute;
@@ -829,3 +844,73 @@ tr:hover td { background: var(--surface); }
   .c3d-panneau { left: 12px; right: 12px; width: auto; top: auto; bottom: 100px; }
   .c3d-legende-niveaux { flex-wrap: wrap; gap: 7px; }
 }
+
+/* Billetterie (page Prévisions) */
+.sous-note { color: var(--sourdine); font-size: 0.85rem; margin: -4px 0 14px; max-width: 760px; }
+.billet-ligne {
+  display: grid;
+  grid-template-columns: 190px 1fr 44px 170px;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--bord);
+}
+.billet-ligne:last-child { border-bottom: none; }
+.billet-jour { color: var(--texte); font-weight: 500; font-size: 0.9rem; }
+.billet-barre { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.billet-barre i { display: block; height: 100%; border-radius: 6px; transition: width 0.6s ease; }
+.billet-haut { background: linear-gradient(90deg, #199e70, #22c584); }
+.billet-moyen { background: linear-gradient(90deg, #3987e5, #5aa0f5); }
+.billet-bas { background: linear-gradient(90deg, #c98500, #e0a020); }
+.billet-pct { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--texte); text-align: right; }
+.billet-proj { color: var(--texte-2); font-size: 0.84rem; text-align: right; }
+@media (max-width: 680px) {
+  .billet-ligne { grid-template-columns: 1fr 44px; grid-template-areas: "jour pct" "barre barre" "proj proj"; gap: 6px 10px; }
+  .billet-jour { grid-area: jour; } .billet-pct { grid-area: pct; }
+  .billet-barre { grid-area: barre; } .billet-proj { grid-area: proj; text-align: left; }
+}
+
+/* Sélecteur d'édition + badges de la carte 3D */
+.segments-edition .segment.actif { background: linear-gradient(90deg, #199e70, #22c584); }
+.carte-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin-right: 4px;
+}
+.carte-badge.pred { background: rgba(230, 103, 103, 0.18); color: #ff9a9a; }
+.carte-badge.hist { background: rgba(255, 255, 255, 0.08); color: var(--texte-2); }
+.barre-outils { row-gap: 10px; }
+
+/* Dimensionnement du personnel (page Allocation) */
+.dim-ligne {
+  display: grid;
+  grid-template-columns: 110px auto 1fr;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bord);
+}
+.dim-ligne:last-child { border-bottom: none; }
+.dim-domaine { color: var(--texte); font-weight: 600; }
+.dim-nombre {
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #3ecf6a;
+  font-variant-numeric: tabular-nums;
+}
+.dim-note { color: var(--texte-2); font-size: 0.82rem; }
+.dim-repartition {
+  grid-column: 1 / -1;
+  color: var(--accent, #6da7ec);
+  font-size: 0.78rem;
+  margin-top: 2px;
+}
+
+/* Badges anticipation */
+.tag-ok { background: rgba(62, 207, 106, 0.16); color: #3ecf6a; }
+.tag-neutre { background: rgba(255, 255, 255, 0.07); color: var(--sourdine); }

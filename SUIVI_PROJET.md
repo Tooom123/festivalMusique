@@ -69,7 +69,60 @@ date de soutenance.
   terrain, scènes modélisées, foule instanciée, marcheurs sur les chemins, navigation
   caméra type carte. La logique métier n'a pas bougé : positions, seuils et formules
   portés à l'identique depuis la carte 2D, qui reste en repli automatique si WebGL
-  n'est pas disponible.
+  n'est pas disponible. Ajouts en suivant : timeline ralentie à 2,1 s/créneau,
+  artiste en cours affiché sous chaque scène, journal d'anomalies daté avec suivi
+  de résolution (« en cours » puis « résolu à HHhMM »).
+- 14/07 (nuit) : le festival devient la 5ᵉ édition. Les éditions 2022-2025 sont
+  simulées comme historique (nouveauté 98k, creux 52k, reprise 69k, record 129k) et
+  alimentent la prévision à deux horizons : fréquentation de l'édition par tendance
+  (vendredi prédit à 1,1 %, samedi sous-estimé de 17 % car il sature — limite
+  documentée) et prévision fine par scène/créneau. Résultat méthodologique fort :
+  l'historique réduit la MAE de 14 % (1 678 → 1 443) et fait basculer le modèle
+  optimal de la régression linéaire vers la forêt aléatoire — le pipeline retient
+  automatiquement le meilleur des deux.
+- 14/07 (nuit, suite) : ajout d'un second signal de prévision d'édition — la
+  billetterie en ligne (74/92/50 % vendus à 2 mois de l'événement). Combinée à la
+  tendance, elle rattrape le samedi que la tendance sous-estimait (17 % → 4 %
+  d'erreur). Nouveau panneau billetterie sur la page Prévisions du site.
+- 14/07 (nuit, fin) : la carte 3D devient multi-éditions (sélecteur d'année). Les
+  éditions 2022-2025 sont rejouables (déroulé réel passé, déterministe), et 2026 est
+  la simulation de notre prédiction (totaux pilotés par la prévision combinée, line-up
+  annoncé). Chaque édition a foule + flux + anomalies recalculés dans le pipeline.
+  Le déroulé réel 2026 reste la vérité terrain des autres modules.
+- 14/07 (nuit, fin) : la détection gagne un module d'anticipation — on applique la
+  règle de surcharge sur la prévision d'affluence pour alerter avant l'événement, et
+  on mesure la fiabilité (7 alertes, 6 confirmées, précision/rappel 86 %). Détection
+  proactive qui relie prévision↔détection. Nouvelle section sur la page Anomalies.
+- 14/07 (nuit, fin) : intégration propre du transport (5ᵉ domaine de ressources de
+  l'énoncé). Contrairement aux équipes par scène, la flotte de navettes est
+  dimensionnée à l'échelle du site sur le pic de départs (~15 000 à la clôture) →
+  24 navettes, 48 agents, cohérent avec le personnel transport généré. Comble le seul
+  angle mort de l'allocation (transport auparavant généré/facturé mais non alloué).
+- 13/07 (relecture) : enrichissement du transport suite à revue — le service gère
+  désormais **deux flux** (arrivées à l'ouverture dès 15h30 + évacuation de clôture),
+  rejoués à travers la flotte par un modèle de file. Le graphique montre la charge des
+  navettes heure par heure (arrivées vs départs) avec la ligne de débit de la flotte, et
+  le calcul des 24 navettes est explicité (5 237 à évacuer ÷ 220 places/2 h). Correction
+  d'un artefact d'affichage (axes en « 15 k » et non « 15,000 », créneaux après minuit).
+- 13/07 (relecture, suite) : levée d'une incohérence relevée en revue — les effectifs
+  idéaux (food 220, sanitaire 133, médical 101) juraient avec la carte qui ne montre
+  que quelques marqueurs (1 stand, 3 toilettes). Ce sont des effectifs à l'échelle du
+  site entier ; on les ancre désormais sur un nombre réaliste d'installations pour
+  50 000 personnes (`INSTALLATIONS` : ~24 points resto, ~30 blocs sanitaires, ~6 postes
+  de secours) et on affiche l'effectif par installation (~9/stand, ~4/bloc, ~17/poste).
+  Aucun calcul touché, la carte reste schématique (note explicite ajoutée).
+- 13/07 (relecture, suite) : la carte 3D montre désormais l'infrastructure réelle —
+  couche procédurale déterministe d'installations (`logique/installations.ts` :
+  ~24 stands de restauration, ~30 blocs sanitaires, 6 postes de secours, postes de
+  sécurité aux entrées/coins/fronts de scène), décor non cliquable pour ne pas
+  surcharger de labels. Les POI nommés (menus, chemins) sont conservés ; des étiquettes
+  de zone reprennent les comptes de l'allocation. Terrain élargi et caméra reculée pour
+  cadrer tout le site. Couche purement visuelle, la logique métier ne bouge pas.
+- 14/07 (nuit, fin) : l'allocation gagne un module de dimensionnement du personnel —
+  on teste 50/75/90/100/110 % de l'effectif de pointe en une passe (réutilise
+  l'optimiseur), on mesure la couverture et les créneaux à découvert, et on déduit
+  l'effectif idéal par domaine. Montre que 100 % suffit (au-delà = gaspillage) et
+  chiffre le juste besoin par domaine. Nouvelle section sur la page Allocation.
 
 ## Risques identifiés et parades
 

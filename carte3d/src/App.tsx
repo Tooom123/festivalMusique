@@ -9,28 +9,34 @@ import { useCreneau } from "./hooks/useCreneau";
 import { useFestivalData } from "./hooks/useFestivalData";
 import { episodesAnomalies } from "./logique/anomalies";
 import { affluencePour, prochainSet } from "./logique/festival";
-import type { Donnees, Poi } from "./types/donnees";
+import type { Donnees, EditionCarte, Poi } from "./types/donnees";
 
 interface Props {
   donnees: Donnees;
+  edition: number;
   jour: number;
   onScene?: (sceneId: number) => void;
   onPoi?: (poi: Poi) => void;
 }
 
-// Racine de la carte 3D : etat (jour, creneau, selection), Canvas R3F et HUD.
-// Les callbacks onScene / onPoi permettent a la page hote de conserver ses
-// panneaux existants (programme d'une scene, carte d'un stand).
-export function App({ donnees, jour, onScene, onPoi }: Props) {
+// Racine de la carte 3D : etat (edition, jour, creneau, selection), Canvas R3F
+// et HUD. Les callbacks onScene / onPoi permettent a la page hote de conserver
+// ses panneaux existants (programme d'une scene, carte d'un stand).
+export function App({ donnees, edition, jour, onScene, onPoi }: Props) {
   const [selection, setSelection] = useState<number | null>(null);
   const [declencheurFocus, setDeclencheurFocus] = useState(0);
 
+  const editionData: EditionCarte = useMemo(
+    () => donnees.editions.find((e) => e.annee === edition) ?? donnees.editions[donnees.editions.length - 1],
+    [donnees, edition],
+  );
+
   const creneauxInit = useMemo(
-    () => [...new Set(donnees.affluence.filter((a) => a.jour === jour).map((a) => a.creneau))].sort((a, b) => a - b),
-    [donnees, jour],
+    () => [...new Set(editionData.affluence.filter((a) => a.jour === jour).map((a) => a.creneau))].sort((a, b) => a - b),
+    [editionData, jour],
   );
   const { idx, setIdx, lecture, basculeLecture, creneau } = useCreneau(creneauxInit, jour);
-  const { creneaux, scenes, flux } = useFestivalData(donnees, jour, creneau);
+  const { creneaux, scenes, flux } = useFestivalData(donnees.scenes, editionData, jour, creneau);
 
   const noms = useMemo(() => {
     const n: Record<number, string> = {};
@@ -42,8 +48,8 @@ export function App({ donnees, jour, onScene, onPoi }: Props) {
   // courant : ceux commences, avec leur statut resolu / en cours. Actifs en
   // tete, puis resolus, du plus recent au plus ancien.
   const episodesJour = useMemo(
-    () => episodesAnomalies(donnees, jour, creneaux),
-    [donnees, jour, creneaux],
+    () => episodesAnomalies(editionData.anomalies, jour, creneaux),
+    [editionData, jour, creneaux],
   );
   const episodesVisibles = useMemo(
     () =>
@@ -61,13 +67,13 @@ export function App({ donnees, jour, onScene, onPoi }: Props) {
 
   const delta = useMemo(() => {
     if (!etatSelection || idx === 0) return 0;
-    const precedent = affluencePour(donnees, jour, creneaux[idx - 1]);
+    const precedent = affluencePour(editionData.affluence, jour, creneaux[idx - 1]);
     return etatSelection.nb - (precedent.get(etatSelection.sceneId) ?? 0);
-  }, [donnees, jour, creneaux, idx, etatSelection]);
+  }, [editionData, jour, creneaux, idx, etatSelection]);
 
   const set = useMemo(
-    () => (etatSelection ? prochainSet(donnees, jour, etatSelection.sceneId, creneau) : undefined),
-    [donnees, jour, etatSelection, creneau],
+    () => (etatSelection ? prochainSet(editionData.programmation, jour, etatSelection.sceneId, creneau) : undefined),
+    [editionData, jour, etatSelection, creneau],
   );
 
   function selectionneScene(sceneId: number) {
@@ -82,7 +88,7 @@ export function App({ donnees, jour, onScene, onPoi }: Props) {
         shadows
         dpr={[1, 1.75]}
         gl={{ antialias: true, powerPreference: "high-performance" }}
-        camera={{ position: [0, 95, 118], fov: 38, near: 1, far: 900 }}
+        camera={{ position: [0, 106, 132], fov: 40, near: 1, far: 900 }}
         onPointerMissed={() => setSelection(null)}
       >
         <color attach="background" args={["#07090f"]} />

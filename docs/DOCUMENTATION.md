@@ -60,6 +60,17 @@ autres jours (conformément aux éditions précédentes). Environ 125 000 entré
 3 jours et 620 000 événements générés (39 000 le vendredi, 49 600 le samedi,
 36 700 le dimanche).
 
+**2026 est la 5ᵉ édition du festival.** Les quatre éditions précédentes sont simulées
+avec la même mécanique et servent d'historique aux modèles de prévision :
+
+| Édition | Entrées (3 jours) | Contexte |
+|---|---|---|
+| 2022 | 97 817 | première édition, effet de nouveauté |
+| 2023 | 52 488 | désaffection, l'effet nouveauté retombe |
+| 2024 | 69 382 | reprise progressive |
+| 2025 | 128 969 | édition record, samedi quasi complet |
+| 2026 | 125 325 | édition courante (simulée) |
+
 La programmation est un vrai line-up de 48 artistes (16 sets d'une heure par jour) :
 à chaque instant exactement 2 scènes jouent, la troisième est en pause pour le
 changement de plateau (rotation Rap+DJ, Rap+Rock, DJ+Rock). Sur chaque scène, la
@@ -87,6 +98,14 @@ pour que la détection d'anomalies et l'allocation de ressources aient un sens.
 | `evenements` | flux arrivée / déplacement / départ de chaque visiteur (simulation) |
 | `affluence` / `affluence_creneau` | relevés de présence par scène (pas de 15 min, agrégés par créneau de 30 min) |
 | `pannes`, `injections_foule` | incidents injectés dans la simulation (vérité terrain pour évaluer la détection) |
+| `historique_editions` | fréquentation quotidienne des éditions 2022-2025 |
+| `historique_affluence` / `historique_programmation` | détail par créneau et programmation des éditions passées (entraînement des modèles) |
+| `billetterie` | part de capacité vendue en ligne par jour, relevée à ~2 mois de l'événement |
+| `prevision_edition` | prévisions 2026 (tendance, billetterie, combinée) et écarts au réel |
+| `cartes_affluence` / `cartes_flux` / `cartes_anomalies` / `cartes_programmation` | données rejouables des 5 éditions pour la carte 3D (2022-2025 réelles, 2026 prédiction) |
+| `dimensionnement` | couverture et effectif idéal par domaine pour 5 niveaux d'effectif (50-110 %) |
+| `anticipation_alertes` | surcharges prédites depuis l'affluence prévue, avec confrontation au réel |
+| `transport_flux` / `transport_metriques` | charge des navettes (arrivées + départs) par créneau et flotte dimensionnée |
 
 ### Simulation à événements discrets
 
@@ -106,24 +125,47 @@ du module de détection.
 
 ## 4. Choix des méthodes et justifications
 
-### 4.1 Prévision de l'affluence — régression linéaire retenue après comparatif
+### 4.1 Prévision de l'affluence — deux horizons, appuyés sur l'historique
 
-- **Problème** : prédire le nombre de visiteurs par scène et par créneau de 30 min
-  pour le dimanche 6 septembre, à partir du vendredi et du samedi (découpage temporel
-  strict, pas de fuite).
+**Niveau 1 — fréquentation de l'édition (dimensionnement).** Deux signaux
+complémentaires, combinés :
+
+- *Tendance historique* : à partir de la fréquentation quotidienne des éditions
+  2022-2025, une régression sur l'année prédit la fréquentation de chaque journée
+  2026 (bornée par la capacité).
+- *Billetterie en ligne* : à ~2 mois de l'événement, on relève la part de capacité
+  déjà vendue (74 % vendredi, 92 % samedi, 50 % dimanche) et on projette la
+  fréquentation finale en supposant qu'une part de la capacité restante se vendra
+  encore (ventes tardives + sur place, `TAUX_CONVERSION_RESTANT = 0.35`).
+- *Prévision combinée* : moyenne des deux. La combinaison est **plus robuste** que
+  chaque signal isolé — voir §5. Point clé : la tendance seule sous-estimait le
+  samedi de 17 % (elle ne « voit » pas l'engouement de l'année) ; la billetterie,
+  elle, le capte immédiatement (92 % déjà vendu) et ramène l'erreur à 4 %.
+
+C'est une estimation d'ordre de grandeur (4 points d'historique par jour), assumée
+comme telle : elle sert à dimensionner avant le festival, pas à piloter en temps réel.
+
+**Niveau 2 — prévision opérationnelle par scène et créneau de 30 min.**
+
+- **Problème** : prédire le nombre de visiteurs par scène et par créneau pour le
+  dimanche 6 septembre 2026, à partir des 4 éditions passées complètes et du
+  vendredi/samedi 2026 (découpage temporel strict, pas de fuite).
 - **Variables** : scène, capacité, notoriété du set en cours, scène active ou en
   pause, notoriété du set suivant (le line-up est public, donc connu à l'avance),
   heure, indicateur soirée, affluence des deux créneaux précédents (prévision à
   court terme, comme en exploitation réelle où les comptages remontent en continu).
-- **Choix** : trois modèles ont été comparés sur le dimanche — régression linéaire,
-  forêt aléatoire (plusieurs profondeurs testées) et modèle naïf. La **régression
-  linéaire l'emporte nettement** (MAE 1 678 contre 1 986 pour la meilleure forêt et
-  2 662 pour le naïf) : avec seulement 2 jours d'historique (96 points d'entraînement),
-  la forêt sur-apprend et généralise mal sur la rotation du dimanche, qui diffère de
-  celles des deux premiers jours. C'est un résultat classique : peu de données et des
-  relations quasi linéaires (l'affluence suit la notoriété et l'inertie du créneau
-  précédent) favorisent le modèle simple. La forêt reste dans le comparatif du
-  dashboard pour documenter ce choix.
+- **Choix, départagé empiriquement** : régression linéaire, forêt aléatoire et
+  modèle naïf sont comparés sur le dimanche. Résultat instructif : **le meilleur
+  modèle dépend du volume de données**. Sans l'historique (entraînement sur
+  96 points, vendredi + samedi seulement), la régression linéaire gagnait
+  (MAE 1 678) car la forêt sur-apprenait. Avec les 4 éditions d'historique
+  (672 points), la **forêt aléatoire repasse devant** (MAE 1 443 contre 1 506 pour
+  la linéaire et 2 662 pour le naïf) : elle a désormais assez d'exemples pour
+  capturer les non-linéarités (saturation, rotations différentes) sans sur-apprendre.
+  Le pipeline sélectionne automatiquement le meilleur des deux et l'affiche comme
+  « modèle retenu ».
+- **Apport mesuré de l'historique** : à modèle optimal dans chaque régime, la MAE
+  passe de 1 678 à 1 443, soit **−14 %** d'erreur grâce aux éditions passées.
 - **Interprétabilité** : importance des variables mesurée par permutation
   (méthode agnostique au modèle).
 
@@ -139,6 +181,13 @@ du module de détection.
     en conditions réelles) sur les variables (affluence, taux d'occupation, variation).
 - Les mouvements de foule sont détectés sur les relevés fins (15 min) et non sur les
   moyennes par créneau, qui diluent les pics.
+- **Anticipation (détection proactive)** : au-delà de la détection réactive, on
+  applique la règle de surcharge sur la *prévision* d'affluence (et non sur l'observé)
+  pour **alerter avant l'événement** — « surcharge prévue à 20h30 sur Scène Rock ».
+  On confronte ensuite ces alertes au réel pour mesurer la fiabilité de l'anticipation
+  (précision et rappel). Seules les surcharges sont anticipables (elles découlent de
+  l'affluence, qu'on prédit) ; les pannes (aléatoires) et les micro-mouvements de foule
+  ne le sont pas — c'est assumé. Ce module relie explicitement prévision → détection.
 
 ### 4.3 Allocation des ressources — programmation linéaire
 
@@ -157,6 +206,35 @@ du module de détection.
   et médical (+50 % et +2) sur les scènes et créneaux touchés, et l'allocation est
   ré-optimisée. On mesure l'apport de cette réallocation en comparant avec
   l'allocation initiale figée.
+- **Dimensionnement du personnel** : au-delà de « comment répartir », l'allocation
+  répond à « combien déployer ». La prévision donne le besoin en personnel ; on teste
+  alors, en une passe, cinq niveaux d'effectif (50 / 75 / 90 / 100 / 110 % du besoin
+  de pointe, c'est-à-dire le maximum d'agents nécessaires simultanément). Pour chaque
+  niveau, on plafonne l'effectif et on ré-optimise la répartition sur la même journée,
+  puis on mesure la couverture et le nombre de créneaux à découvert. L'effectif idéal
+  d'un domaine est le plus petit niveau testé couvrant ≥ 99 % de ses besoins. On
+  réutilise le même solveur : le calcul reste léger. Ces effectifs (sécurité 382,
+  food 220, sanitaire 133, médical 101) sont à l'échelle du **site entier** : pour
+  qu'ils restent lisibles, on les rapporte à un nombre réaliste d'installations pour
+  50 000 personnes (`INSTALLATIONS` : ≈ 24 points de restauration, ≈ 30 blocs
+  sanitaires, ≈ 6 postes de secours) → effectif par installation (food ~9, sanitaire
+  ~4, médical ~17). La carte du site n'affiche que des marqueurs représentatifs, pas
+  l'inventaire complet — d'où l'écart apparent entre « 220 agents food » et le stand
+  unique dessiné.
+- **Transport (navettes) — dimensionnement site-level** : les 4 domaines ci-dessus se
+  répartissent par scène ; le transport, lui, est un service à l'échelle du site, piloté
+  par **deux flux** — les **arrivées** (concentrées à l'ouverture, la flotte tourne à plein
+  dès 15h30) et les **départs**, qui montent au fil de la soirée puis explosent à la
+  clôture (~15 000 personnes partent vers minuit). On dimensionne la flotte sur la
+  contrainte la plus dure — évacuer la vague de cloture en 2 h — puis on rejoue les deux
+  flux à travers cette flotte (modèle de file : ce qui dépasse le débit d'un créneau
+  attend le suivant), ce qui donne la charge réelle des navettes heure par heure.
+  Calcul : 14 963 départs × 35 % en navette = 5 237 personnes à évacuer, sur 4 rotations
+  de 55 places (2 h) → 5 237 ÷ 220 ≈ **24 navettes, 48 agents**, cohérent avec le personnel
+  transport généré. Hypothèses assumées et documentées (55 personnes/rotation, 35 % de
+  report modal — le reste en voiture/à pied/en TC, 2 h de fenêtre). Les 5 domaines de
+  ressources de l'énoncé (sécurité, food, sanitaire, médical, transport) sont ainsi
+  tous couverts, chacun avec la logique adaptée (par scène vs site-level).
 
 ### 4.4 Évaluation de scénarios — rejeu Monte Carlo
 
@@ -188,19 +266,30 @@ du module de détection.
 - **Carte du site en 3D temps réel** (React + TypeScript + Three.js via React Three
   Fiber, compilée en un bundle unique `site/lib/carte3d.js`) : le site du festival
   est modélisé en vue aérienne interactive — scènes avec écrans et faisceaux,
-  chemins, stands, foule instanciée dont la densité suit l'affluence réelle,
-  marcheurs qui matérialisent les flux entre scènes (sens de déplacement visible),
-  halo au sol coloré par le taux d'occupation (vert < 70 %, jaune, orange,
-  rouge > 100 %), marqueurs d'anomalies. Navigation type carte (rotation, zoom,
-  déplacement, recentrage sur une scène au clic) et timeline qui rejoue la journée
-  créneau par créneau : c'est la matérialisation visuelle de la simulation à
-  événements discrets. **Seule la couche d'affichage a changé** : les positions,
-  seuils, formules de taille et de largeur de flux sont portés à l'identique depuis
-  la carte 2D (`carte3d/src/logique/festival.ts`), et les mêmes tables alimentent
-  les deux rendus. Cliquer sur une scène affiche ses statistiques (affluence,
-  évolution, flux entrants/sortants, set en cours) et son programme ; cliquer sur
-  un stand affiche sa carte (produits et prix). En cas d'échec WebGL, la page
-  bascule automatiquement sur l'ancienne carte 2D ECharts, conservée en repli.
+  chemins, stands, foule instanciée dont la densité suit l'affluence, marcheurs qui
+  matérialisent les flux entre scènes (sens de déplacement visible), halo au sol
+  coloré par le taux d'occupation (vert < 70 %, jaune, orange, rouge > 100 %),
+  marqueurs d'anomalies. Navigation type carte (rotation, zoom, déplacement,
+  recentrage sur une scène au clic) et timeline qui rejoue la journée créneau par
+  créneau : c'est la matérialisation visuelle de la simulation à événements discrets.
+- **Sélecteur d'édition** : la carte rejoue au choix les 5 éditions du festival.
+  Les éditions **2022 à 2025** sont le déroulé réel passé (rejouées à partir de
+  l'historique, déterministes : mêmes graines, donc identiques à chaque lancement).
+  L'édition **2026** est la *simulation de la prédiction* : une simulation à
+  événements discrets dont les totaux par jour sont pilotés par la prévision combinée
+  (tendance + billetterie) et le line-up 2026 annoncé — c'est « à quoi ressemblera le
+  festival si notre prédiction est juste ». Un badge distingue explicitement
+  « Déroulé réel » (passé) de « Prédiction » (2026). Chaque édition a ses propres
+  foule, flux et anomalies. Le déroulé réel 2026 (vérité terrain des modules
+  détection / allocation / scénarios) reste, lui, sur les pages Affluence et Anomalies.
+- **Seule la couche d'affichage a changé** : les positions, seuils, formules de
+  taille et de largeur de flux sont portés à l'identique depuis la carte 2D
+  (`carte3d/src/logique/festival.ts`). Cliquer sur une scène affiche ses
+  statistiques (affluence, évolution, flux entrants/sortants, set en cours) et son
+  programme (pour 2026 ; les éditions passées n'ont pas de programmation d'époque
+  conservée) ; cliquer sur un stand affiche sa carte (produits et prix). En cas
+  d'échec WebGL, la page bascule automatiquement sur l'ancienne carte 2D ECharts,
+  elle aussi multi-éditions, conservée en repli.
 - **Recommandations opérationnelles** : un module traduit les sorties chiffrées en
   actions concrètes priorisées (surcharges prévues → limiter les entrées, renforts
   décidés par la réallocation, besoins résiduels non couverts, configuration
@@ -211,21 +300,40 @@ du module de détection.
 
 ## 5. Résultats
 
-Résultats du pipeline (graine 42, environ 65 s d'exécution — dominées par les
-12 rejeux de simulation à 3 jours des scénarios) :
+Résultats du pipeline (graine 42, environ 3 min 30 d'exécution — simulation des
+5 éditions plus les 12 rejeux Monte Carlo des scénarios) :
 
-### Prévision (dimanche 6 septembre, 48 points scène × créneau)
+### Prévision de l'édition (tendance + billetterie)
 
-| Modèle | MAE (visiteurs) |
+| Journée 2026 | Vendu | Tendance | Billetterie | Combinée | Réel |
+|---|---|---|---|---|---|
+| Vendredi | 74 % | 38 629 (1.1 %) | 41 550 (6.4 %) | 40 090 (2.7 %) | 39 041 |
+| Samedi | 92 % | 41 121 (**17.0 %**) | 47 400 (**4.4 %**) | 44 260 (10.7 %) | 49 558 |
+| Dimanche | 50 % | 35 001 (4.7 %) | 33 750 (8.1 %) | 34 376 (6.4 %) | 36 726 |
+
+Enseignement : **aucun signal seul n'est parfait, mais ils sont complémentaires**.
+La tendance rate le samedi (17 % d'erreur) car elle ne perçoit pas l'engouement
+propre à cette édition ; la billetterie le corrige spectaculairement (92 % déjà
+vendu → 4,4 % d'erreur). Inversement le dimanche, encore peu vendu (50 %), est mieux
+capté par la tendance. La combinaison des deux borne le risque : jamais plus de
+~11 % d'erreur, là où parier sur un seul signal peut coûter 17 %. C'est l'intérêt
+d'un dimensionnement robuste plutôt que d'un pari.
+
+### Prévision opérationnelle (dimanche 6 septembre, 48 points scène × créneau)
+
+| Modèle (entraîné avec l'historique) | MAE (visiteurs) |
 |---|---|
-| Régression linéaire (retenue) | **1 678** |
-| Forêt aléatoire | 1 986 |
+| Forêt aléatoire (retenue) | **1 443** |
+| Régression linéaire | 1 506 |
 | Naïf (créneau précédent) | 2 662 |
+| Meilleur modèle **sans** historique | 1 678 |
 
-R² de la régression linéaire : **0.756**. Variables les plus importantes
-(par permutation) : affluence des créneaux précédents, scène active ou en pause,
-notoriété du set. Une MAE de 1 678 représente environ 7 % de la capacité de la
-plus grande scène (25 000) — cohérent avec l'échelle du festival.
+R² du modèle retenu : **0.741**. L'historique des 4 éditions réduit l'erreur de
+**14 %** et fait basculer le modèle optimal de la régression linéaire (peu de
+données) vers la forêt aléatoire (assez de données pour les non-linéarités).
+Variables les plus importantes (par permutation) : affluence des créneaux
+précédents, scène active ou en pause, notoriété du set. Une MAE de 1 443 représente
+moins de 6 % de la capacité de la plus grande scène (25 000).
 
 ### Détection
 
@@ -233,16 +341,37 @@ plus grande scène (25 000) — cohérent avec l'échelle du festival.
 (vérité terrain), **6 sont retrouvés** (rappel 100 % sur cette graine). Les 6 pannes
 injectées sont toutes remontées.
 
+Anticipation des surcharges (dimanche) : **7 surcharges annoncées avant l'événement,
+6 confirmées** le jour J → précision 86 %, rappel 86 %. On prévoit donc à l'avance,
+avec une fiabilité honnête, où et quand les scènes vont saturer.
+
 ### Allocation (dimanche 6 septembre)
 
 | Situation | Couverture des besoins |
 |---|---|
-| Besoins prévus, allocation optimisée | 99.9 % |
-| Besoins ajustés (anomalies), allocation figée | 94.5 % |
-| Besoins ajustés, après réallocation | **98.8 %** |
+| Besoins prévus, allocation optimisée | 100.0 % |
+| Besoins ajustés (anomalies), allocation figée | 94.6 % |
+| Besoins ajustés, après réallocation | **99.7 %** |
 
 La réallocation déclenchée par les anomalies récupère l'essentiel de la couverture
 perdue, à effectifs constants.
+
+Dimensionnement du personnel (couverture par niveau d'effectif) :
+
+| Effectif déployé | Couverture | Créneaux à découvert |
+|---|---|---|
+| 50 % | 79.5 % | 60 |
+| 75 % | 94.3 % | 23 |
+| 90 % | 98.9 % | 13 |
+| **100 %** | **100.0 %** | **0** |
+| 110 % | 100.0 % | 0 |
+
+Enseignement : la couverture monte vite puis **plafonne à 100 %** — déployer plus que
+l'effectif de pointe ne sert à rien (personnel payé pour rien), et descendre sous
+90 % ouvre des zones à risque. Effectif idéal par domaine (plus petit niveau couvrant
+≥ 99 % des besoins) : **sécurité 382, food 220, sanitaire 133, médical 101**. Détail
+intéressant : sécurité et médical suffisent à 90 % de leur pic (besoins brefs), tandis
+que food et sanitaire réclament 100 % — le juste dimensionnement diffère par domaine.
 
 ### Scénarios (moyenne sur 3 runs)
 
@@ -273,6 +402,16 @@ la gérer une fois qu'elle est là.
   la robustesse de la détection mériterait d'être évaluée sur plusieurs générations.
 - La notoriété des artistes du line-up est estimée manuellement (score 3-10), elle
   ne vient pas d'une source de données réelle (streams, ventes).
+- La prévision de l'édition par tendance repose sur 4 points par journée : elle
+  donne un ordre de grandeur, pas une prévision fiable (samedi sous-estimé de 17 %),
+  d'où la combinaison avec la billetterie.
+- Le taux de conversion de la billetterie restante (35 %) est une hypothèse globale
+  unique ; en réalité il varie selon les jours (acheteurs précoces le vendredi,
+  tardifs le dimanche), ce qui explique que la billetterie soit excellente le samedi
+  mais moins le dimanche.
+- Les éditions passées sont simulées avec une structure de programmation similaire
+  à celle de 2026 (mêmes créneaux de notoriété) : hypothèse simplificatrice, un vrai
+  historique aurait des line-ups plus variés.
 - L'allocation optimise chaque créneau indépendamment : pas de contrainte de
   continuité des équipes entre créneaux (une équipe peut changer de scène toutes les
   30 min, ce qui est peu réaliste).

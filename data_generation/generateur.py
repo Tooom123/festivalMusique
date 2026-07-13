@@ -7,9 +7,21 @@ OUVERTURE = 16 * 60
 FERMETURE = 24 * 60
 CAPACITE_JOUR = 50000
 
+ANNEE_COURANTE = 2026
 DATES = {1: "vendredi 4 septembre 2026", 2: "samedi 5 septembre 2026",
          3: "dimanche 6 septembre 2026"}
 OBJECTIFS_VISITEURS = {1: 38000, 2: 48000, 3: 38000}
+
+EDITIONS_PASSEES = {
+    2022: {1: 30000, 2: 36000, 3: 29000},
+    2023: {1: 16000, 2: 21000, 3: 15000},
+    2024: {1: 22000, 2: 28000, 3: 21000},
+    2025: {1: 42000, 2: 48000, 3: 41000},
+}
+
+# Part de la capacite deja vendue en billetterie en ligne, releve a ~2 mois de
+# l'evenement (etat actuel). Le samedi part le plus vite (tetes d'affiche).
+BILLETTERIE_COURANTE = {1: 0.74, 2: 0.92, 3: 0.50}
 
 ROTATIONS = {
     1: [(1, 2), (1, 3), (2, 3), (1, 2), (1, 3), (2, 3), (1, 2), (1, 3)],
@@ -75,11 +87,39 @@ def genere_programmation(scenes, rng=None, decalages=None):
                                          "genre", "heure_debut", "heure_fin", "popularite"])
 
 
-def genere_visiteurs(rng):
+def genere_billetterie():
+    lignes = [[jour, part, int(round(part * CAPACITE_JOUR))]
+              for jour, part in BILLETTERIE_COURANTE.items()]
+    return pd.DataFrame(lignes, columns=["jour", "part_vendue", "ventes_actuelles"])
+
+
+def genere_programmation_passee(scenes, annee):
+    genres = dict(zip(scenes["scene_id"], scenes["genre"]))
+    lignes = []
+    num = 1
+    for jour in range(1, NB_JOURS + 1):
+        compteurs = {1: 0, 2: 0, 3: 0}
+        for i, paire in enumerate(ROTATIONS[jour]):
+            debut = OUVERTURE + i * 60
+            for scene_id in paire:
+                popularite = LINEUP[jour][scene_id][compteurs[scene_id]][1]
+                compteurs[scene_id] += 1
+                lignes.append([annee, num, jour, scene_id,
+                               f"Artiste {annee}.{num:02d}", genres[scene_id],
+                               debut, debut + 60, popularite])
+                num += 1
+    return pd.DataFrame(lignes, columns=["annee", "concert_id", "jour", "scene_id",
+                                         "artiste", "genre", "heure_debut", "heure_fin",
+                                         "popularite"])
+
+
+def genere_visiteurs(rng, objectifs=None):
+    if objectifs is None:
+        objectifs = OBJECTIFS_VISITEURS
     lignes = []
     vid = 1
     for jour in range(1, NB_JOURS + 1):
-        objectif = OBJECTIFS_VISITEURS.get(jour, 38000)
+        objectif = objectifs.get(jour, 38000)
         nb = min(int(objectif * rng.uniform(0.95, 1.05)), CAPACITE_JOUR)
         arrivees = np.clip(rng.normal(18 * 60, 90, nb), OUVERTURE, 22 * 60).astype(int)
         durees = np.clip(rng.normal(5 * 60, 90, nb), 120, 480).astype(int)

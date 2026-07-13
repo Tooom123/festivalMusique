@@ -31,7 +31,7 @@ def style_fig(fig, hauteur=430):
 
 
 def heure_texte(minute):
-    minute = int(minute)
+    minute = int(minute) % 1440
     return f"{minute // 60:02d}h{minute % 60:02d}"
 
 

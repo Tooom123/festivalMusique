@@ -68,8 +68,8 @@ if page == "Vue d'ensemble":
               help="Maximum atteint sur une scène et un créneau")
     c3.metric("Anomalies détectées", len(anomalies), f"dont {hautes} de gravité haute",
               delta_color="off")
-    c4.metric("Erreur de prévision (MAE)", f"{metriques['mae_lineaire'][0]:.0f} visiteurs",
-              f"R2 = {metriques['r2_lineaire'][0]:.2f}", delta_color="off")
+    c4.metric("Erreur de prévision (MAE)", f"{metriques['mae_retenue'][0]:.0f} visiteurs",
+              f"R2 = {metriques['r2_retenu'][0]:.2f}", delta_color="off")
     c5.metric("Couverture des besoins", f"{ajustee['couverture'].mean():.0%}",
               "après réallocation", delta_color="off")
 
@@ -98,7 +98,7 @@ if page == "Vue d'ensemble":
         fig2.update_traces(marker_line_width=0)
         st.plotly_chart(style_fig(fig2), width="stretch")
 
-    st.caption("Pipeline : simulation à événements discrets, prévision (régression linéaire), "
+    st.caption("Pipeline : simulation à événements discrets, prévision (historique 2022-2025 + comparatif de modèles), "
                "détection (règles + Isolation Forest), allocation (programmation linéaire), "
                "scénarios (rejeu Monte Carlo).")
 
@@ -216,21 +216,60 @@ elif page == "Affluence":
     st.plotly_chart(style_fig(fig2, 380), width="stretch")
 
 elif page == "Prévisions":
-    st.title(f"Prévision de l'affluence ({JOURS_LONG[3]})")
-    st.caption("Régression linéaire entraînée sur les jours 1 et 2, comparée à une forêt "
-               "aléatoire et à un modèle naïf qui reprend le créneau précédent. Avec deux "
-               "jours d'historique, le modèle linéaire généralise mieux que la forêt.")
+    st.title("Prévision de l'affluence")
+    st.caption("Deux horizons : la fréquentation de la 5e édition estimée par la tendance "
+               "des éditions 2022-2025, puis la prévision par scène et créneau de 30 min "
+               "pour le dimanche (modèles entraînés sur les 4 éditions passées plus le "
+               "vendredi et le samedi 2026, comparés sur les données du dimanche).")
     previsions = charge("previsions")
     metriques = charge("metriques_prevision")
     importances = charge("importances_variables")
+    historique = charge("historique_editions")
+    prevision_ed = charge("prevision_edition")
     previsions["nom"] = previsions["scene_id"].map(noms_scenes)
 
+    st.subheader("Affluence par édition")
+    totaux = historique.groupby("annee")["visiteurs"].sum().reset_index()
+    reel_2026 = int(prevision_ed["visiteurs_reels"].sum())
+    combinee_2026 = int(prevision_ed["prevision_combinee"].sum())
+    annees = [str(a) for a in totaux["annee"]] + ["2026"]
+    valeurs = list(totaux["visiteurs"]) + [reel_2026]
+    fig_ed = go.Figure()
+    fig_ed.add_trace(go.Bar(x=annees, y=valeurs, name="Fréquentation réelle",
+                            marker_color=["#31415f"] * 4 + ["#3987e5"]))
+    fig_ed.add_trace(go.Scatter(x=["2026"], y=[combinee_2026], mode="markers",
+                                name="Prévision combinée (tendance + billetterie)",
+                                marker=dict(symbol="diamond", size=14, color="#e66767")))
+    fig_ed.update_layout(yaxis_title="Entrées sur 3 jours", legend_title=None, bargap=0.4)
+    st.plotly_chart(style_fig(fig_ed, 340), width="stretch")
+
+    st.subheader("Billetterie en ligne (état à 2 mois de l'événement)")
+    billetterie_vue = prevision_ed.copy()
+    billetterie_vue["jour"] = billetterie_vue["jour"].map(JOURS_LONG)
+    billetterie_vue["part_vendue"] = (billetterie_vue["part_vendue"] * 100).round().astype(int).astype(str) + " %"
+    st.dataframe(
+        billetterie_vue[["jour", "part_vendue", "prevision_tendance",
+                         "prevision_billetterie", "prevision_combinee", "visiteurs_reels"]]
+        .rename(columns={"jour": "Jour", "part_vendue": "Vendu", "prevision_tendance": "Prév. tendance",
+                         "prevision_billetterie": "Prév. billetterie",
+                         "prevision_combinee": "Prév. combinée", "visiteurs_reels": "Réel"}),
+        width="stretch", hide_index=True)
+
+    retenu = metriques["modele_retenu"][0]
+    nom_retenu = "forêt aléatoire" if retenu == "foret aleatoire" else "régression linéaire"
+    nom_autre = "régression linéaire" if retenu == "foret aleatoire" else "forêt aléatoire"
+    mae_autre = metriques["mae_lineaire"][0] if retenu == "foret aleatoire" else metriques["mae_foret"][0]
+    gain = (1 - metriques["mae_retenue"][0] / metriques["mae_sans_historique"][0]) * 100
+
+    st.subheader(f"Prévision par scène et créneau ({JOURS_LONG[3]})")
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("MAE régression linéaire", f"{metriques['mae_lineaire'][0]:.1f}",
-              "modèle retenu", delta_color="off")
-    c2.metric("MAE forêt aléatoire", f"{metriques['mae_foret'][0]:.1f}")
+    c1.metric("MAE modèle retenu", f"{metriques['mae_retenue'][0]:.1f}",
+              f"{nom_retenu} · R2 {metriques['r2_retenu'][0]:.3f}", delta_color="off")
+    c2.metric(f"MAE {nom_autre}", f"{mae_autre:.1f}")
     c3.metric("MAE modèle naïf", f"{metriques['mae_naif'][0]:.1f}")
-    c4.metric("R2 régression linéaire", f"{metriques['r2_lineaire'][0]:.3f}")
+    c4.metric("Apport de l'historique", f"-{gain:.0f} %",
+              f"MAE {metriques['mae_sans_historique'][0]:.0f} sans les éditions passées",
+              delta_color="off")
 
     scene_choisie = st.selectbox("Scène", list(noms_scenes.values()))
     df = previsions[previsions["nom"] == scene_choisie].sort_values("creneau").copy()
@@ -285,6 +324,33 @@ elif page == "Anomalies":
     st.dataframe(df[["heure", "nom", "type", "gravite", "source"]],
                  width="stretch", hide_index=True)
 
+    st.subheader("Anticipation — prévoir les surcharges avant l'événement")
+    st.caption("On applique la règle de surcharge sur la prévision d'affluence du dimanche "
+               "6 septembre 2026 pour alerter à l'avance, puis on vérifie combien de ces "
+               "alertes se sont produites. Seules les surcharges sont anticipables (pas les "
+               "pannes ni les micro-mouvements de foule).")
+    antic = charge("anticipation_alertes")
+    ac1, ac2, ac3, ac4 = st.columns(4)
+    ac1.metric("Surcharges anticipées", int(metriques["antic_predites"][0]),
+               "avant le festival", delta_color="off")
+    ac2.metric("Confirmées le jour J",
+               f"{int(metriques['antic_correctes'][0])}/{int(metriques['antic_predites'][0])}",
+               delta_color="off")
+    ac3.metric("Précision", f"{metriques['antic_precision'][0]:.0%}",
+               "quand on alerte, on a raison", delta_color="off")
+    ac4.metric("Rappel", f"{metriques['antic_rappel'][0]:.0%}",
+               "des surcharges réelles anticipées", delta_color="off")
+
+    antic = antic.sort_values("creneau").copy()
+    antic["Heure"] = antic["creneau"].apply(heure_texte)
+    antic["Scène"] = antic["scene_id"].map(noms_scenes)
+    antic["Occupation prévue"] = (antic["taux_prevu"] * 100).round().astype(int).astype(str) + " %"
+    antic["Occupation réelle"] = (antic["taux_reel"] * 100).round().astype(int).astype(str) + " %"
+    antic["Alerte"] = antic["realise"].map({1: "confirmée", 0: "non survenue",
+                                            True: "confirmée", False: "non survenue"})
+    st.dataframe(antic[["Heure", "Scène", "Occupation prévue", "Occupation réelle", "Alerte"]],
+                 width="stretch", hide_index=True)
+
 elif page == "Allocation":
     st.title(f"Allocation des ressources ({JOURS_LONG[3]})")
     st.caption("Répartition du personnel optimisée par programmation linéaire à partir des "
@@ -327,6 +393,75 @@ elif page == "Allocation":
                        bargap=0.35)
     fig2.update_traces(marker_line_width=0)
     st.plotly_chart(style_fig(fig2, 380), width="stretch")
+
+    st.subheader("Dimensionnement du personnel — combien déployer ?")
+    st.caption(f"D'après la prévision d'affluence du {JOURS_LONG[3]} 2026 : faut-il vraiment "
+               "100 % de l'effectif de pointe ? On teste tous les niveaux d'un coup : en dessous, "
+               "des créneaux restent à découvert (risque) ; au-dessus, c'est du personnel payé "
+               "pour rien.")
+    dim = charge("dimensionnement")
+    niveaux = dim.drop_duplicates("niveau_pct").sort_values("niveau_pct")
+    couleurs_niv = ["#d03b3b" if c < 0.9 else "#fab219" if c < 0.999 else "#0ca30c"
+                    for c in niveaux["couverture_globale"]]
+    fig3 = go.Figure(go.Bar(
+        x=[f"{p} %" for p in niveaux["niveau_pct"]],
+        y=(niveaux["couverture_globale"] * 100).round(1),
+        marker_color=couleurs_niv,
+        text=[f"{n} à découvert" for n in niveaux["creneaux_decouverts"]],
+    ))
+    fig3.update_layout(xaxis_title="Effectif déployé", yaxis_title="Couverture (%)",
+                       yaxis_range=[0, 105])
+    st.plotly_chart(style_fig(fig3, 340), width="stretch")
+
+    from allocation.optimisation import INSTALLATIONS
+    ideal = dim.drop_duplicates("type")[["type", "ideal", "reference"]].copy()
+    ideal["Domaine"] = ideal["type"].map({"securite": "Sécurité", "food": "Food",
+                                          "sanitaire": "Sanitaire", "medical": "Médical"})
+
+    def _repartition(row):
+        i = INSTALLATIONS.get(row["type"], {})
+        if i.get("nombre"):
+            return f"≈ {i['nombre']} {i['libelle']} (~{round(row['ideal'] / i['nombre'])}/inst.)"
+        return i.get("libelle", "")
+    ideal["Répartition (site entier)"] = ideal.apply(_repartition, axis=1)
+    st.write("**Effectif idéal par domaine**")
+    st.dataframe(
+        ideal.rename(columns={"ideal": "Effectif idéal", "reference": "Effectif de pointe (100 %)"})
+        [["Domaine", "Effectif idéal", "Effectif de pointe (100 %)", "Répartition (site entier)"]]
+        .sort_values("Effectif idéal", ascending=False),
+        width="stretch", hide_index=True)
+    st.caption("Effectifs à l'échelle du site entier, répartis sur toutes les installations d'un "
+               "festival de 50 000 personnes. La carte n'affiche que quelques marqueurs représentatifs.")
+
+    st.subheader("Transport — dimensionner la flotte de navettes")
+    st.caption("Les navettes gèrent deux flux : amener le public à l'ouverture (dès 15h30) et "
+               "évacuer la vague de départs qui explose à la clôture. On dimensionne la flotte sur "
+               "la contrainte la plus dure — l'évacuation en 2 h — et on en déduit le personnel.")
+    tflux = charge("transport_flux").sort_values("creneau")
+    tm = charge("transport_metriques").iloc[0]
+    tc1, tc2, tc3 = st.columns(3)
+    tc1.metric("Pic de départs", int(tm["pic_departs"]), "à évacuer à la clôture", delta_color="off")
+    tc2.metric("Flotte idéale", f"{int(tm['flotte_ideale'])} navettes",
+               f"évacuation en {tm['fenetre_evac_h']:.0f} h", delta_color="off")
+    tc3.metric("Personnel transport", f"{int(tm['staff_ideal'])} agents",
+               "2 par navette", delta_color="off")
+    tflux["heure"] = tflux["creneau"].apply(heure_texte)
+    fig_t = go.Figure()
+    fig_t.add_bar(x=tflux["heure"], y=tflux["arrivees"], name="Arrivées", marker_color="#3987e5")
+    fig_t.add_bar(x=tflux["heure"], y=tflux["departs"], name="Départs", marker_color="#c98500")
+    fig_t.add_hline(y=int(tm["debit_creneau"]), line_dash="dash", line_color="#8b8ba0",
+                    annotation_text=f"Débit flotte : {int(tm['debit_creneau'])}/30 min",
+                    annotation_position="top left", annotation_font_color="#8b8ba0")
+    fig_t.update_layout(barmode="group", yaxis_title="Passagers navette / 30 min", xaxis_title=None,
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
+    st.plotly_chart(style_fig(fig_t, 320), width="stretch")
+    part = int(round(tm["part_navette"] * 100))
+    st.caption(f"**Pourquoi {int(tm['flotte_ideale'])} navettes ?** {int(tm['pic_departs'])} départs × "
+               f"{part} % en navette = {int(tm['partants_navette'])} personnes à évacuer, en "
+               f"{tm['fenetre_evac_h']:.0f} h ({int(tm['fenetre_evac_h'] * 2)} rotations de "
+               f"{int(tm['capacite_navette'])} places) → {int(tm['partants_navette'])} ÷ "
+               f"{int(tm['capacite_navette'] * tm['fenetre_evac_h'] * 2)} ≈ {int(tm['flotte_ideale'])}. "
+               f"Le {part} % est une hypothèse de report modal, à ajuster selon l'implantation du site.")
 
 elif page == "Recommandations":
     st.title("Recommandations")

@@ -8,14 +8,20 @@ import type { ApiCarte3D, OptionsMontage } from "./types/donnees";
 // sans rien changer a sa propre logique.
 function monte(element: HTMLElement, options: OptionsMontage): ApiCarte3D {
   const racine = createRoot(element);
+  const defautEdition = options.edition
+    ?? options.donnees.editions[options.donnees.editions.length - 1].annee;
+  let changeEdition: ((a: number) => void) | null = null;
   let changeJour: ((j: number) => void) | null = null;
 
   function Pont() {
+    const [edition, setEdition] = useState(defautEdition);
     const [jour, setJour] = useState(options.jour ?? 2);
+    changeEdition = setEdition;
     changeJour = setJour;
     return (
       <App
         donnees={options.donnees}
+        edition={edition}
         jour={jour}
         onScene={options.onScene}
         onPoi={options.onPoi}
@@ -26,6 +32,7 @@ function monte(element: HTMLElement, options: OptionsMontage): ApiCarte3D {
   racine.render(<Pont />);
 
   return {
+    setEdition: (a: number) => changeEdition?.(a),
     setJour: (j: number) => changeJour?.(j),
     demonte: () => racine.unmount(),
   };

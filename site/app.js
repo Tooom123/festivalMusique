@@ -31,7 +31,7 @@ DONNEES.scenes.forEach((s) => { NOMS_SCENES[s.scene_id] = s.nom; CAPACITES[s.sce
 const mouvementReduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function heureTexte(m) {
-  m = Math.round(m);
+  m = Math.round(m) % 1440;
   return String(Math.floor(m / 60)).padStart(2, "0") + "h" + String(m % 60).padStart(2, "0");
 }
 function fmt(n) { return Math.round(n).toLocaleString("fr-FR"); }
@@ -183,7 +183,7 @@ function initAccueil() {
     carteKpi("Visiteurs sur 3 jours", `<span data-compte="${k.visiteurs_total}">0</span>`, "entrées simulées") +
     carteKpi("Pic d'affluence", `<span data-compte="${k.pic_affluence}">0</span>`, "sur une scène / créneau") +
     carteKpi("Anomalies détectées", `<span data-compte="${k.nb_anomalies}">0</span>`, `dont ${k.nb_anomalies_hautes} de gravité haute`) +
-    carteKpi("Erreur de prévision (MAE)", `<span data-compte="${Math.round(m.mae_lineaire)}">0</span>`, `R² = ${m.r2_lineaire.toFixed(2)}`) +
+    carteKpi("Erreur de prévision (MAE)", `<span data-compte="${Math.round(m.mae_retenue)}">0</span>`, `R² = ${m.r2_retenu.toFixed(2)}`) +
     carteKpi("Couverture des besoins", `${DONNEES.allocation.couverture_ajustee.toFixed(0)} %`, "après réallocation");
   animeCompteurs(document.getElementById("kpi-accueil"));
 
@@ -303,10 +303,24 @@ function dessineProgrammation(jour) {
 /* ================= Carte du site ================= */
 
 let jourCarte = 2;
+let editionCarte = null;
 let carte3dApi = null;
 let clicCarte2dLie = false;
 
+function editionCourante() {
+  return DONNEES.cartes_editions.find((e) => e.annee === editionCarte)
+    || DONNEES.cartes_editions[DONNEES.cartes_editions.length - 1];
+}
+
 function initCarte() {
+  const editions = DONNEES.cartes_editions;
+  editionCarte = editions[editions.length - 1].annee;
+
+  creerSegments("seg-edition", editions.map((e) => ({
+    label: e.type === "prediction" ? e.annee + " · Prédiction" : String(e.annee),
+    valeur: e.annee,
+  })), (a) => { editionCarte = a; changeEditionCarte(a); }, editions.length - 1);
+
   creerSegments("seg-carte", [1, 2, 3].map((j) => ({ label: jourLong(j), valeur: j })),
     (j) => { jourCarte = j; changeJourCarte(j); }, 1);
 
@@ -314,48 +328,60 @@ function initCarte() {
     document.getElementById("panneau-detail").hidden = true;
   });
 
-  monteCarte(jourCarte);
+  monteCarte();
 }
 
-function monteCarte(jour) {
+function monteCarte() {
   if (window.Carte3D) {
     try {
       carte3dApi = Carte3D.monte(document.getElementById("graph-carte"), {
-        donnees: DONNEES,
-        jour,
+        donnees: {
+          scenes: DONNEES.scenes,
+          pois: DONNEES.pois,
+          jours_long: DONNEES.jours_long,
+          editions: DONNEES.cartes_editions,
+        },
+        edition: editionCarte,
+        jour: jourCarte,
         onScene: (id) => montrerProgrammeScene(id),
         onPoi: (p) => montrerDetailPoi(p),
       });
-      majInfosCarte(jour);
+      majInfosCarte();
       return;
     } catch (e) {
       console.error("Carte 3D indisponible, repli sur la carte 2D", e);
       carte3dApi = null;
     }
   }
-  dessineCarte2D(jour);
+  dessineCarte2D();
+}
+
+function changeEditionCarte(a) {
+  if (carte3dApi) { carte3dApi.setEdition(a); majInfosCarte(); }
+  else dessineCarte2D();
 }
 
 function changeJourCarte(jour) {
-  if (carte3dApi) {
-    carte3dApi.setJour(jour);
-    majInfosCarte(jour);
-  } else {
-    dessineCarte2D(jour);
-  }
+  if (carte3dApi) { carte3dApi.setJour(jour); majInfosCarte(); }
+  else dessineCarte2D();
 }
 
-function majInfosCarte(jour) {
-  const aff = DONNEES.affluence.filter((a) => a.jour === jour);
+function majInfosCarte() {
+  const ed = editionCourante();
+  const aff = ed.affluence.filter((a) => a.jour === jourCarte);
   const pic = Math.max(...aff.map((a) => a.nb_visiteurs));
-  const nbAnos = DONNEES.anomalies.filter((a) => a.jour === jour).length;
+  const nbAnos = ed.anomalies.filter((a) => a.jour === jourCarte).length;
+  const badge = ed.type === "prediction"
+    ? `<span class="carte-badge pred">Prédiction ${ed.annee}</span>`
+    : `<span class="carte-badge hist">Déroulé réel ${ed.annee}</span>`;
   document.getElementById("kpi-carte").innerHTML =
-    `<span><b>${fmt(pic)}</b> pic du jour</span><span><b>${nbAnos}</b> anomalies</span>`;
+    `${badge}<span><b>${fmt(pic)}</b> pic du jour</span><span><b>${nbAnos}</b> anomalies</span>`;
   document.getElementById("panneau-detail").hidden = true;
 }
 
 function seriesCarte(jour, creneau) {
-  const aff = DONNEES.affluence.filter((a) => a.jour === jour && a.creneau === creneau);
+  const ed = editionCourante();
+  const aff = ed.affluence.filter((a) => a.jour === jour && a.creneau === creneau);
   const scenesData = aff.map((a) => {
     const taux = a.nb_visiteurs / CAPACITES[a.scene_id];
     return {
@@ -368,10 +394,10 @@ function seriesCarte(jour, creneau) {
         color: "#fff", fontWeight: 700, fontSize: 12, lineHeight: 16, align: "center" },
     };
   });
-  const anomsData = DONNEES.anomalies
+  const anomsData = ed.anomalies
     .filter((a) => a.jour === jour && a.creneau === creneau && POSITIONS[a.scene_id])
     .map((a) => ({ value: [POSITIONS[a.scene_id][0], POSITIONS[a.scene_id][1] + 12], type: a.type, gravite: a.gravite }));
-  const fluxData = DONNEES.flux
+  const fluxData = ed.flux
     .filter((f) => f.jour === jour && f.creneau === creneau)
     .map((f) => ({
       coords: [POSITIONS[f.scene_origine], POSITIONS[f.scene_destination]],
@@ -404,8 +430,10 @@ function seriesCarte(jour, creneau) {
   ];
 }
 
-function dessineCarte2D(jour) {
-  const creneaux = creneauxDuJour(jour);
+function dessineCarte2D() {
+  const jour = jourCarte;
+  const ed = editionCourante();
+  const creneaux = [...new Set(ed.affluence.filter((a) => a.jour === jour).map((a) => a.creneau))].sort((a, b) => a - b);
   const g = graphe("graph-carte");
   if (!clicCarte2dLie) {
     g.on("click", (params) => {
@@ -455,20 +483,27 @@ function dessineCarte2D(jour) {
     options: creneaux.map((cr) => ({ series: seriesCarte(jour, cr) })),
   }, true);
 
-  majInfosCarte(jour);
+  majInfosCarte();
 }
 
 function montrerProgrammeScene(sceneId) {
-  const prog = DONNEES.programmation
-    .filter((p) => p.jour === jourCarte && p.scene_id === sceneId)
-    .sort((a, b) => a.heure_debut - b.heure_debut);
+  const ed = editionCourante();
   document.getElementById("detail-titre").textContent =
-    `Programme — ${NOMS_SCENES[sceneId]} · ${jourLong(jourCarte)}`;
-  document.getElementById("detail-corps").innerHTML =
-    "<table><thead><tr><th>Horaire</th><th>Artiste</th><th>Notoriété</th></tr></thead><tbody>" +
-    prog.map((p) => `<tr><td>${heureTexte(p.heure_debut)} – ${heureTexte(p.heure_fin)}</td>` +
-      `<td>${p.artiste}</td><td>${p.popularite}/10</td></tr>`).join("") +
-    "</tbody></table>";
+    `${NOMS_SCENES[sceneId]} · ${jourLong(jourCarte)}`;
+  if (ed.type === "prediction") {
+    const prog = ed.programmation
+      .filter((p) => p.jour === jourCarte && p.scene_id === sceneId)
+      .sort((a, b) => a.heure_debut - b.heure_debut);
+    document.getElementById("detail-corps").innerHTML =
+      "<table><thead><tr><th>Horaire</th><th>Artiste</th><th>Notoriété</th></tr></thead><tbody>" +
+      prog.map((p) => `<tr><td>${heureTexte(p.heure_debut)} – ${heureTexte(p.heure_fin)}</td>` +
+        `<td>${p.artiste}</td><td>${p.popularite}/10</td></tr>`).join("") +
+      "</tbody></table>";
+  } else {
+    document.getElementById("detail-corps").innerHTML =
+      `<p style="color:var(--texte-2)">Édition passée : l'affluence est rejouée d'après ` +
+      `l'historique ${ed.annee}. La programmation d'époque n'est pas conservée.</p>`;
+  }
   const panneau = document.getElementById("panneau-detail");
   panneau.hidden = false;
   panneau.scrollIntoView({ behavior: mouvementReduit ? "instant" : "smooth", block: "nearest" });
@@ -546,14 +581,93 @@ function dessineAffluence(jour) {
 
 /* ================= Prévisions ================= */
 
+function dessineEditions() {
+  const parAnnee = {};
+  DONNEES.historique_editions.forEach((l) => {
+    parAnnee[l.annee] = (parAnnee[l.annee] || 0) + l.visiteurs;
+  });
+  const somme = (champ) => DONNEES.prevision_edition.reduce((s, l) => s + l[champ], 0);
+  const reel2026 = somme("visiteurs_reels");
+  const combinee2026 = somme("prevision_combinee");
+  const annees = [...Object.keys(parAnnee).map(Number).sort(), 2026];
+  const detailJour = (annee) => {
+    if (annee === 2026) {
+      return DONNEES.prevision_edition
+        .map((l) => `${jourCourt(l.jour)} : ${fmt(l.visiteurs_reels)}`)
+        .join("<br>");
+    }
+    return DONNEES.historique_editions
+      .filter((l) => l.annee === annee)
+      .map((l) => `${jourCourt(l.jour)} : ${fmt(l.visiteurs)}`)
+      .join("<br>");
+  };
+
+  graphe("graph-editions").setOption({
+    tooltip: { ...tooltipBase(),
+      formatter: (pa) => {
+        const annee = annees[pa.dataIndex];
+        if (pa.seriesName.startsWith("Prévision")) {
+          return `<b>Prévision combinée 2026</b> : ${fmt(combinee2026)}<br>` +
+            DONNEES.prevision_edition
+              .map((l) => `${jourCourt(l.jour)} : tendance ${fmt(l.prevision_tendance)}`
+                + ` · billetterie ${fmt(l.prevision_billetterie)}`
+                + ` → combinée ${fmt(l.prevision_combinee)} (écart ${l.erreur_combinee_pct.toFixed(1)} %)`)
+              .join("<br>");
+        }
+        return `<b>Édition ${annee}</b> : ${fmt(pa.value)} entrées<br>${detailJour(annee)}`;
+      } },
+    legend: legendeBase(),
+    grid: { left: 64, right: 16, top: 42, bottom: 30 },
+    xAxis: { type: "category", data: annees.map(String), ...axesBase(), splitLine: { show: false } },
+    yAxis: { type: "value", name: "Entrées sur 3 jours", nameTextStyle: { color: C.axe },
+      ...axesBase(), axisLabel: { color: C.axe, fontSize: 11, formatter: (v) => fmt(v / 1000) + " k" } },
+    series: [
+      { name: "Fréquentation réelle", type: "bar", barWidth: "46%",
+        data: annees.map((a) => ({
+          value: a === 2026 ? reel2026 : parAnnee[a],
+          itemStyle: { color: a === 2026 ? "#3987e5" : "#31415f", borderRadius: [6, 6, 0, 0] },
+        })) },
+      { name: "Prévision combinée (tendance + billetterie)", type: "scatter", symbol: "diamond", symbolSize: 16,
+        itemStyle: { color: "#e66767", borderColor: "#0d0e16", borderWidth: 1.5 },
+        data: annees.map((a) => (a === 2026 ? combinee2026 : null)) },
+    ],
+  });
+}
+
+function dessineBilletterie() {
+  document.getElementById("billetterie-panneau").innerHTML = DONNEES.prevision_edition
+    .map((l) => {
+      const pct = Math.round(l.part_vendue * 100);
+      const classe = pct >= 90 ? "haut" : pct >= 65 ? "moyen" : "bas";
+      return `<div class="billet-ligne">
+        <span class="billet-jour">${jourLong(l.jour)}</span>
+        <div class="billet-barre"><i class="billet-${classe}" style="width:${pct}%"></i></div>
+        <span class="billet-pct">${pct}%</span>
+        <span class="billet-proj">≈ ${fmt(l.prevision_billetterie)} attendus</span>
+      </div>`;
+    })
+    .join("");
+}
+
 function initPrevisions() {
   const m = DONNEES.metriques;
-  document.getElementById("kpi-previsions").innerHTML =
-    carteKpi("MAE régression linéaire", m.mae_lineaire.toFixed(1), "modèle retenu", "positif") +
-    carteKpi("MAE forêt aléatoire", m.mae_foret.toFixed(1), "comparatif") +
-    carteKpi("MAE modèle naïf", m.mae_naif.toFixed(1), "créneau précédent") +
-    carteKpi("R² régression linéaire", m.r2_lineaire.toFixed(3), "variance expliquée");
+  const retenuForet = m.modele_retenu === "foret aleatoire";
+  const nomRetenu = retenuForet ? "forêt aléatoire" : "régression linéaire";
+  const nomAutre = retenuForet ? "régression linéaire" : "forêt aléatoire";
+  const maeAutre = retenuForet ? m.mae_lineaire : m.mae_foret;
+  const gainHistorique = (1 - m.mae_retenue / m.mae_sans_historique) * 100;
 
+  document.getElementById("kpi-previsions").innerHTML =
+    carteKpi("MAE modèle retenu", m.mae_retenue.toFixed(1),
+      `${nomRetenu} · R² ${m.r2_retenu.toFixed(3)}`, "positif") +
+    carteKpi(`MAE ${nomAutre}`, maeAutre.toFixed(1), "comparatif") +
+    carteKpi("MAE modèle naïf", m.mae_naif.toFixed(1), "créneau précédent") +
+    carteKpi("Apport de l'historique", `-${gainHistorique.toFixed(0)} %`,
+      `MAE ${m.mae_sans_historique.toFixed(0)} → ${m.mae_retenue.toFixed(0)} grâce aux éditions 2022-2025`,
+      "positif");
+
+  dessineEditions();
+  dessineBilletterie();
   creerSegments("seg-previsions", [1, 2, 3].map((s) => ({ label: NOMS_SCENES[s], valeur: s })), dessinePrevisions, 0);
   dessinePrevisions(1);
 
@@ -613,6 +727,36 @@ function initAnomalies() {
 
   creerSegments("seg-anomalies", [1, 2, 3].map((j) => ({ label: jourLong(j), valeur: j })), dessineAnomalies, 0);
   dessineAnomalies(1);
+
+  dessineAnticipation();
+}
+
+function dessineAnticipation() {
+  const a = DONNEES.anticipation;
+  document.getElementById("kpi-anticipation").innerHTML =
+    carteKpi("Surcharges anticipées", a.predites,
+      "annoncées avant le festival", "positif") +
+    carteKpi("Confirmées le jour J", `${a.correctes}/${a.predites}`,
+      "alertes qui se sont réalisées", "positif") +
+    carteKpi("Précision", `${Math.round(a.precision * 100)} %`,
+      "quand on alerte, on a raison", "positif") +
+    carteKpi("Rappel", `${Math.round(a.rappel * 100)} %`,
+      "des surcharges réelles anticipées", "positif");
+
+  const lignes = [...a.alertes].sort((x, y) => x.creneau - y.creneau);
+  document.getElementById("table-anticipation").innerHTML =
+    "<table><thead><tr><th>Heure</th><th>Scène</th><th>Occupation prévue</th>"
+    + "<th>Occupation réelle</th><th>Alerte</th></tr></thead><tbody>"
+    + lignes.map((l) => {
+        const prevu = Math.round(l.taux_prevu * 100);
+        const reel = Math.round(l.taux_reel * 100);
+        const badge = l.realise
+          ? `<span class="tag tag-ok">confirmée</span>`
+          : `<span class="tag tag-neutre">non survenue</span>`;
+        return `<tr><td>${heureTexte(l.creneau)}</td><td>${NOMS_SCENES[l.scene_id]}</td>`
+          + `<td>${prevu} %</td><td>${reel} %</td><td>${badge}</td></tr>`;
+      }).join("")
+    + "</tbody></table>";
 }
 
 function dessineAnomalies(jour) {
@@ -663,6 +807,127 @@ function initAllocation() {
   const types = [...new Set(al.lignes.map((l) => l.type))].sort();
   creerSegments("seg-allocation", types.map((t) => ({ label: t, valeur: t })), dessineAllocation, 0);
   dessineAllocation(types[0]);
+
+  dessineDimensionnement();
+  dessineTransport();
+}
+
+const LIBELLES_DOMAINE = { securite: "Sécurité", food: "Food", sanitaire: "Sanitaire",
+                           medical: "Médical", transport: "Transport" };
+
+function dessineTransport() {
+  const t = DONNEES.transport;
+  const flux = [...t.flux].sort((a, b) => a.creneau - b.creneau);
+  const heures = flux.map((f) => heureTexte(f.creneau));
+  const debit = t.debit_creneau;
+
+  graphe("graph-transport").setOption({
+    tooltip: { ...tooltipBase(), axisPointer: { type: "shadow" },
+      formatter: (pa) => {
+        const l = pa.map((p) => `${p.marker}${p.seriesName} : ${fmt(p.value)}`).join("<br>");
+        return `${pa[0].axisValue}<br>${l}`;
+      } },
+    legend: { data: ["Arrivées", "Départs"], top: 0, right: 4, textStyle: { color: C.texte },
+      itemWidth: 12, itemHeight: 12, itemGap: 16 },
+    grid: { left: 44, right: 16, top: 34, bottom: 30 },
+    xAxis: { type: "category", data: heures, ...axesBase(), splitLine: { show: false } },
+    yAxis: { type: "value", ...axesBase(),
+      axisLabel: { color: C.axe, fontSize: 11, formatter: (v) => fmt(v) },
+      splitLine: { lineStyle: { color: C.grille } } },
+    series: [
+      { name: "Arrivées", type: "bar", barWidth: "40%", barGap: "0%",
+        itemStyle: { color: "#3987e5", borderRadius: [3, 3, 0, 0] },
+        data: flux.map((f) => f.arrivees) },
+      { name: "Départs", type: "bar", barWidth: "40%",
+        itemStyle: { color: "#c98500", borderRadius: [3, 3, 0, 0] },
+        data: flux.map((f) => f.departs),
+        markLine: { silent: true, symbol: "none",
+          lineStyle: { color: C.texte, type: "dashed", width: 1 },
+          label: { color: C.texte, fontSize: 10, position: "insideStartTop",
+            formatter: `Débit flotte : ${fmt(debit)}/30 min` },
+          data: [{ yAxis: debit }] } },
+    ],
+  });
+
+  document.getElementById("transport-resume").innerHTML =
+    `<div class="dim-ligne"><span class="dim-domaine">Pic de départs</span>
+       <span class="dim-nombre" style="color:#c98500">${fmt(t.pic_departs)}</span>
+       <span class="dim-note">personnes à évacuer à la clôture (~minuit)</span></div>
+     <div class="dim-ligne"><span class="dim-domaine">Flotte idéale</span>
+       <span class="dim-nombre">${fmt(t.flotte_ideale)}</span>
+       <span class="dim-note">navettes</span></div>
+     <div class="dim-ligne"><span class="dim-domaine">Personnel</span>
+       <span class="dim-nombre">${fmt(t.staff_ideal)}</span>
+       <span class="dim-note">agents transport (2 par navette)</span></div>
+     <p class="sous-note" style="margin-top:14px"><strong>Pourquoi ${fmt(t.flotte_ideale)} navettes&nbsp;?</strong>
+     ${fmt(t.pic_departs)} départs × ${Math.round(t.part_navette * 100)} % en navette =
+     ${fmt(t.partants_navette)} personnes à évacuer, en ${fmt(t.fenetre_evac_h)} h (${fmt(t.fenetre_evac_h * 2)} rotations
+     de ${fmt(t.capacite_navette)} places) → ${fmt(t.partants_navette)} ÷ ${fmt(t.capacite_navette * t.fenetre_evac_h * 2)}
+     ≈ ${fmt(t.flotte_ideale)}.</p>
+     <p class="sous-note" style="margin-top:8px"><strong>Le ${Math.round(t.part_navette * 100)} %</strong> est une
+     hypothèse de report modal (le reste vient en voiture, à pied ou en transports en commun) : c'est le
+     paramètre à ajuster selon l'implantation réelle du site et l'offre de parking.</p>`;
+}
+
+function dessineDimensionnement() {
+  const dim = DONNEES.dimensionnement;
+  const niveaux = dim.niveaux;
+  const couleurNiveau = (c) => (c >= 0.999 ? "#0ca30c" : c >= 0.9 ? "#fab219" : "#d03b3b");
+
+  graphe("graph-dimensionnement").setOption({
+    tooltip: { ...tooltipBase(),
+      formatter: (pa) => {
+        const n = niveaux[pa.dataIndex];
+        return `<b>${n.niveau_pct} % de l'effectif de pointe</b><br>`
+          + `Couverture : ${(n.couverture_globale * 100).toFixed(1)} %<br>`
+          + `${n.creneaux_decouverts} créneau(x) à découvert`;
+      } },
+    grid: { left: 52, right: 16, top: 20, bottom: 46 },
+    xAxis: { type: "category", data: niveaux.map((n) => n.niveau_pct + " %"),
+      name: "Effectif déployé", nameLocation: "middle", nameGap: 32,
+      nameTextStyle: { color: C.axe }, ...axesBase(), splitLine: { show: false } },
+    yAxis: { type: "value", min: 0, max: 100, axisLabel: { color: C.axe, formatter: "{value} %" },
+      name: "Couverture", nameTextStyle: { color: C.axe }, ...axesBase() },
+    series: [{
+      type: "bar", barWidth: "52%",
+      data: niveaux.map((n) => ({
+        value: Math.round(n.couverture_globale * 1000) / 10,
+        itemStyle: { color: couleurNiveau(n.couverture_globale), borderRadius: [6, 6, 0, 0] },
+      })),
+      markLine: {
+        silent: true, symbol: "none",
+        lineStyle: { color: "#3ecf6a", type: "dashed", width: 2 },
+        label: { formatter: "Objectif : 100 % couvert", color: "#3ecf6a", fontSize: 11,
+                 fontWeight: 600, position: "insideStartBottom" },
+        data: [{ yAxis: 100 }],
+      },
+    }],
+  });
+
+  const inst = dim.installations || {};
+  document.getElementById("dimensionnement-ideal").innerHTML = dim.ideal
+    .sort((a, b) => b.ideal - a.ideal)
+    .map((d) => {
+      const economie = d.reference - d.ideal;
+      const i = inst[d.type];
+      let repartition = "";
+      if (i && i.nombre) {
+        const parInstall = Math.round(d.ideal / i.nombre);
+        repartition = `<span class="dim-repartition">répartis sur ≈ ${i.nombre} ${i.libelle}
+          (~${parInstall}/installation)</span>`;
+      } else if (i) {
+        repartition = `<span class="dim-repartition">${i.libelle}</span>`;
+      }
+      return `<div class="dim-ligne">
+        <span class="dim-domaine">${LIBELLES_DOMAINE[d.type] || d.type}</span>
+        <span class="dim-nombre">${fmt(d.ideal)}</span>
+        <span class="dim-note">${economie > 0
+          ? `agents (soit ${economie} de moins que le pic ${fmt(d.reference)})`
+          : `agents (le juste besoin de pointe)`}</span>
+        ${repartition}
+      </div>`;
+    })
+    .join("");
 }
 
 function dessineAllocation(type) {
@@ -758,7 +1023,7 @@ function initScenarios() {
     xAxis: { type: "category", data: noms, ...axesBase(),
       axisLabel: { color: C.axe, fontSize: 10.5, interval: 0, width: 110, overflow: "break" },
       splitLine: { show: false } },
-    yAxis: { type: "value", axisLabel: { color: C.axe, formatter: (v) => fmt(v / 1000) + " k€" }, ...axesBase() },
+    yAxis: { type: "value", ...axesBase(), axisLabel: { color: C.axe, fontSize: 11, formatter: (v) => fmt(v / 1000) + " k€" } },
     series: [{ type: "bar", barWidth: "46%",
       itemStyle: { color: "#199e70", borderRadius: [6, 6, 0, 0] },
       data: synthese.map((s) => s.cout_personnel) }],

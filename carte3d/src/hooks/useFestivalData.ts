@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   affluencePour, anomaliesPour, couleurTaux, creneauxDuJour, fluxPour, monde, POSITIONS, setActuel,
 } from "../logique/festival";
-import type { Donnees } from "../types/donnees";
+import type { EditionCarte, SceneFestival } from "../types/donnees";
 
 export interface EtatScene {
   sceneId: number;
@@ -16,19 +16,30 @@ export interface EtatScene {
   artiste?: string; // set en cours, absent si la scene est en pause
 }
 
-// Instantane de l'etat du festival pour un jour + un creneau donnes.
+// Instantane de l'etat du festival pour une edition, un jour et un creneau.
 // Toutes les valeurs viennent des memes tables que la carte 2D.
-export function useFestivalData(donnees: Donnees, jour: number, creneau: number) {
-  const creneaux = useMemo(() => creneauxDuJour(donnees, jour), [donnees, jour]);
+export function useFestivalData(
+  scenesRef: SceneFestival[],
+  edition: EditionCarte,
+  jour: number,
+  creneau: number,
+) {
+  const creneaux = useMemo(
+    () => creneauxDuJour(edition.affluence, jour),
+    [edition, jour],
+  );
 
   const etat = useMemo(() => {
-    const parScene = affluencePour(donnees, jour, creneau);
-    const anomalies = anomaliesPour(donnees, jour, creneau);
+    const parScene = affluencePour(edition.affluence, jour, creneau);
+    const anomalies = anomaliesPour(edition.anomalies, jour, creneau);
     const scenesAnormales = new Set(anomalies.map((a) => a.scene_id));
 
-    const scenes: EtatScene[] = donnees.scenes.map((s) => {
+    const scenes: EtatScene[] = scenesRef.map((s) => {
       const nb = parScene.get(s.scene_id) ?? 0;
       const taux = nb / s.capacite;
+      // Les editions passees ont des noms d'artistes generiques : on n'affiche
+      // que les vrais noms (line-up 2026 annonce), pas "Artiste 2022.01".
+      const a = setActuel(edition.programmation, jour, s.scene_id, creneau)?.artiste;
       return {
         sceneId: s.scene_id,
         nom: s.nom,
@@ -38,12 +49,12 @@ export function useFestivalData(donnees: Donnees, jour: number, creneau: number)
         couleur: couleurTaux(taux),
         position: monde(...POSITIONS[s.scene_id]),
         aAnomalie: scenesAnormales.has(s.scene_id),
-        artiste: setActuel(donnees, jour, s.scene_id, creneau)?.artiste,
+        artiste: a && !a.startsWith("Artiste ") ? a : undefined,
       };
     });
 
-    return { scenes, flux: fluxPour(donnees, jour, creneau), anomalies };
-  }, [donnees, jour, creneau]);
+    return { scenes, flux: fluxPour(edition.flux, jour, creneau), anomalies };
+  }, [scenesRef, edition, jour, creneau]);
 
   return { creneaux, ...etat };
 }

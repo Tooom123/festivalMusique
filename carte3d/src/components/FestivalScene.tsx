@@ -7,6 +7,7 @@ import { CameraRig } from "./CameraRig";
 import { Crowd } from "./Crowd";
 import { Effects } from "./Effects";
 import { Flows } from "./Flows";
+import { Installations } from "./Installations";
 import { Lights } from "./Lights";
 import { Paths } from "./Paths";
 import { POI } from "./POI";
@@ -44,6 +45,7 @@ export function FestivalScene({ scenes, flux, pois, selection, declencheurFocus,
       <Lights />
       <Terrain />
       <Paths pois={pois} />
+      <Installations />
 
       {scenes.map((s) => (
         <Stage

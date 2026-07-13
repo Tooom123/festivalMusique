@@ -14,6 +14,28 @@ GRAINE = 42
 DOSSIER = Path(__file__).parent / "data"
 
 
+def reduit_flux(evenements):
+    # Top 3 des flux de foule par creneau (memes donnees que la carte 2026).
+    dep = evenements[(evenements["type"] == "deplacement")
+                     & (evenements["scene_origine"] > 0)].copy()
+    dep["creneau"] = (dep["minute"] // 30) * 30
+    flux = (dep.groupby(["jour", "creneau", "scene_origine", "scene_destination"])
+            .size().reset_index(name="nb"))
+    return (flux.sort_values("nb", ascending=False)
+            .groupby(["jour", "creneau"]).head(3).reset_index(drop=True))
+
+
+def carte_edition(annee, scenes, prog, resultat):
+    # Donnees rejouables d'une edition : foule, flux et anomalies par creneau.
+    aff = resultat["affluence_creneau"].assign(annee=annee)
+    flux = reduit_flux(resultat["evenements"]).assign(annee=annee)
+    anomalies = detection.detecte(resultat["affluence_creneau"], scenes,
+                                  resultat["pannes"], resultat["affluence"]).assign(annee=annee)
+    prog_c = prog[["jour", "scene_id", "artiste", "heure_debut", "heure_fin",
+                   "popularite"]].assign(annee=annee)
+    return aff, flux, anomalies, prog_c
+
+
 def main():
     debut = time.time()
 
@@ -33,13 +55,71 @@ def main():
         nb = int((visiteurs["jour"] == jour).sum())
         print(f"      {generateur.DATES[jour]} : {nb} visiteurs")
 
+    print("=== 1b/5 Historique des editions 2022-2025 ===")
+    hist_affluence = []
+    hist_programmation = []
+    hist_editions = []
+    cartes_aff, cartes_flux, cartes_anom, cartes_prog = [], [], [], []
+    for annee, objectifs in generateur.EDITIONS_PASSEES.items():
+        rng_annee = np.random.default_rng(GRAINE + annee)
+        prog_annee = generateur.genere_programmation_passee(scenes, annee)
+        visiteurs_annee = generateur.genere_visiteurs(rng_annee, objectifs)
+        resultat_annee = simulation.simule(scenes, prog_annee, visiteurs_annee,
+                                           ressources, rng_annee)
+        hist_affluence.append(resultat_annee["affluence_creneau"].assign(annee=annee))
+        hist_programmation.append(prog_annee)
+        for jour, nb in visiteurs_annee.groupby("jour").size().items():
+            hist_editions.append([annee, int(jour), int(nb)])
+        a, f, an, p = carte_edition(annee, scenes, prog_annee, resultat_annee)
+        cartes_aff.append(a); cartes_flux.append(f)
+        cartes_anom.append(an); cartes_prog.append(p)
+        print(f"    Edition {annee} : {len(visiteurs_annee)} visiteurs")
+    hist_affluence = pd.concat(hist_affluence, ignore_index=True)
+    hist_programmation = pd.concat(hist_programmation, ignore_index=True)
+    hist_editions = pd.DataFrame(hist_editions, columns=["annee", "jour", "visiteurs"])
+
     print(f"=== 2/5 Prevision de l'affluence ({generateur.DATES[3]}) ===")
-    df = prevision.prepare_donnees(resultat["affluence_creneau"], prog, scenes)
-    previsions, metriques, importances = prevision.entraine(df)
-    print(f"    MAE regression lineaire (retenue) : {metriques['mae_lineaire']:.1f} visiteurs"
-          f" | foret aleatoire : {metriques['mae_foret']:.1f}"
-          f" | modele naif : {metriques['mae_naif']:.1f}")
-    print(f"    R2 regression lineaire : {metriques['r2_lineaire']:.3f}")
+    annee = generateur.ANNEE_COURANTE
+    affluence_totale = pd.concat(
+        [hist_affluence, resultat["affluence_creneau"].assign(annee=annee)],
+        ignore_index=True)
+    prog_totale = pd.concat([hist_programmation, prog.assign(annee=annee)],
+                            ignore_index=True)
+    df = prevision.prepare_donnees(affluence_totale, prog_totale, scenes)
+    previsions, metriques, importances = prevision.entraine(df, annee)
+    print(f"    Modele retenu : {metriques['modele_retenu']}"
+          f" (MAE {metriques['mae_retenue']:.1f} visiteurs, R2 {metriques['r2_retenu']:.3f})")
+    print(f"    MAE lineaire : {metriques['mae_lineaire']:.1f}"
+          f" | foret : {metriques['mae_foret']:.1f}"
+          f" | naif : {metriques['mae_naif']:.1f}"
+          f" | sans historique : {metriques['mae_sans_historique']:.1f}")
+
+    reels = visiteurs.groupby("jour").size().to_dict()
+    billetterie = generateur.genere_billetterie()
+    prevision_ed = prevision.prevision_edition(hist_editions, billetterie, reels,
+                                               annee, generateur.CAPACITE_JOUR)
+    for _, l in prevision_ed.iterrows():
+        print(f"    Jour {int(l['jour'])} ({int(l['part_vendue'] * 100)} % vendu) :"
+              f" tendance {int(l['prevision_tendance'])} (ecart {l['erreur_tendance_pct']:.1f} %),"
+              f" billetterie {int(l['prevision_billetterie'])} (ecart {l['erreur_billetterie_pct']:.1f} %),"
+              f" combinee {int(l['prevision_combinee'])} (ecart {l['erreur_combinee_pct']:.1f} %)"
+              f" vs reel {int(l['visiteurs_reels'])}")
+
+    print(f"=== 1c/5 Simulation de la prediction {annee} (totaux prevus) ===")
+    objectifs_prevus = {int(l["jour"]): int(l["prevision_combinee"])
+                        for _, l in prevision_ed.iterrows()}
+    rng_prev = np.random.default_rng(GRAINE + annee)
+    visiteurs_prev = generateur.genere_visiteurs(rng_prev, objectifs_prevus)
+    resultat_prev = simulation.simule(scenes, prog, visiteurs_prev, ressources, rng_prev)
+    a, f, an, p = carte_edition(annee, scenes, prog, resultat_prev)
+    cartes_aff.append(a); cartes_flux.append(f)
+    cartes_anom.append(an); cartes_prog.append(p)
+    print(f"    {len(visiteurs_prev)} visiteurs simules d'apres la prevision combinee")
+
+    cartes_affluence = pd.concat(cartes_aff, ignore_index=True)
+    cartes_flux = pd.concat(cartes_flux, ignore_index=True)
+    cartes_anomalies = pd.concat(cartes_anom, ignore_index=True)
+    cartes_programmation = pd.concat(cartes_prog, ignore_index=True)
 
     print("=== 3/5 Detection des anomalies ===")
     anomalies = detection.detecte(resultat["affluence_creneau"], scenes,
@@ -47,6 +127,11 @@ def main():
     trouvees, total = detection.evalue_detection(anomalies, resultat["injections"])
     print(f"    {len(anomalies)} anomalies detectees"
           f" | {trouvees}/{total} mouvements de foule injectes retrouves")
+
+    alertes_anticipation, m_antic = detection.anticipe_surcharges(previsions, scenes)
+    print(f"    Anticipation des surcharges : {m_antic['predites']} annoncees avant l'evenement,"
+          f" {m_antic['correctes']} confirmees"
+          f" (precision {m_antic['precision']:.0%}, rappel {m_antic['rappel']:.0%})")
 
     print(f"=== 4/5 Allocation des ressources ({generateur.DATES[3]}) ===")
     besoins_initiaux = optimisation.calcule_besoins(previsions)
@@ -64,6 +149,18 @@ def main():
     print(f"    Couverture des besoins ajustes si allocation figee : {figee['couverture'].mean():.1%}")
     print(f"    Couverture des besoins ajustes apres reallocation : {allocation_ajustee['couverture'].mean():.1%}")
 
+    transport_flux, m_transport = optimisation.dimensionne_transport(visiteurs)
+    print(f"    Transport : pic de departs {m_transport['pic_departs']} a la cloture"
+          f" -> flotte ideale {m_transport['flotte_ideale']} navettes"
+          f" ({m_transport['staff_ideal']} agents)")
+
+    dimensionnement = optimisation.analyse_dimensionnement(besoins_ajustes)
+    ideal = dimensionnement.drop_duplicates("type").set_index("type")["ideal"].to_dict()
+    print(f"    Dimensionnement : effectif ideal par domaine {ideal}")
+    for pct, g in dimensionnement.groupby("niveau_pct"):
+        print(f"      {pct} % de l'effectif de pointe : couverture {g['couverture_globale'].iloc[0]:.1%}"
+              f" ({int(g['creneaux_decouverts'].iloc[0])} creneaux a decouvert)")
+
     print("=== 5/5 Evaluation des scenarios d'organisation ===")
     details, synthese = scenarios.evalue_tous()
     print(synthese.to_string(index=False))
@@ -72,6 +169,11 @@ def main():
     metriques_df["anomalies_detectees"] = len(anomalies)
     metriques_df["foules_retrouvees"] = trouvees
     metriques_df["foules_injectees"] = total
+    metriques_df["antic_precision"] = m_antic["precision"]
+    metriques_df["antic_rappel"] = m_antic["rappel"]
+    metriques_df["antic_predites"] = m_antic["predites"]
+    metriques_df["antic_reelles"] = m_antic["reelles"]
+    metriques_df["antic_correctes"] = m_antic["correctes"]
 
     base.sauvegarde(DOSSIER, {
         "scenes": scenes,
@@ -88,10 +190,23 @@ def main():
         "previsions": previsions,
         "metriques_prevision": metriques_df,
         "importances_variables": importances,
+        "anticipation_alertes": alertes_anticipation,
+        "historique_editions": hist_editions,
+        "historique_affluence": hist_affluence,
+        "historique_programmation": hist_programmation,
+        "billetterie": billetterie,
+        "prevision_edition": prevision_ed,
+        "cartes_affluence": cartes_affluence,
+        "cartes_flux": cartes_flux,
+        "cartes_anomalies": cartes_anomalies,
+        "cartes_programmation": cartes_programmation,
         "anomalies": anomalies,
         "allocation_initiale": allocation_initiale,
         "allocation_figee": figee,
         "allocation_ajustee": allocation_ajustee,
+        "dimensionnement": dimensionnement,
+        "transport_flux": transport_flux,
+        "transport_metriques": pd.DataFrame([m_transport]),
         "scenarios_details": details,
         "scenarios_synthese": synthese,
     })

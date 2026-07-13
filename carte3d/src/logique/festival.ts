@@ -2,7 +2,7 @@
 // memes seuils de couleur, memes formules de taille et de largeur de flux.
 // Seule la couche d'affichage change, pas les calculs.
 
-import type { Anomalie, Donnees, LigneFlux } from "../types/donnees";
+import type { Anomalie, Concert, LigneAffluence, LigneFlux } from "../types/donnees";
 
 export const POSITIONS: Record<number, [number, number]> = {
   1: [50, 76],
@@ -67,45 +67,49 @@ export function largeurFlux(nb: number): number {
   return (1.5 + Math.min(nb / 40, 6)) * 0.45;
 }
 
-export function creneauxDuJour(donnees: Donnees, jour: number): number[] {
+export function creneauxDuJour(affluence: LigneAffluence[], jour: number): number[] {
   return [...new Set(
-    donnees.affluence.filter((a) => a.jour === jour).map((a) => a.creneau),
+    affluence.filter((a) => a.jour === jour).map((a) => a.creneau),
   )].sort((a, b) => a - b);
 }
 
 export function affluencePour(
-  donnees: Donnees,
+  affluence: LigneAffluence[],
   jour: number,
   creneau: number,
 ): Map<number, number> {
   const carte = new Map<number, number>();
-  donnees.affluence
+  affluence
     .filter((a) => a.jour === jour && a.creneau === creneau)
     .forEach((a) => carte.set(a.scene_id, a.nb_visiteurs));
   return carte;
 }
 
-export function fluxPour(donnees: Donnees, jour: number, creneau: number): LigneFlux[] {
-  return donnees.flux.filter((f) => f.jour === jour && f.creneau === creneau);
+export function fluxPour(flux: LigneFlux[], jour: number, creneau: number): LigneFlux[] {
+  return flux.filter((f) => f.jour === jour && f.creneau === creneau);
 }
 
 export function anomaliesPour(
-  donnees: Donnees,
+  anomalies: Anomalie[],
   jour: number,
   creneau: number,
 ): Anomalie[] {
-  return donnees.anomalies.filter((a) => a.jour === jour && a.creneau === creneau);
+  return anomalies.filter((a) => a.jour === jour && a.creneau === creneau);
 }
 
-export function prochainSet(donnees: Donnees, jour: number, sceneId: number, creneau: number) {
-  return donnees.programmation
+export function prochainSet(
+  programmation: Concert[], jour: number, sceneId: number, creneau: number,
+) {
+  return programmation
     .filter((p) => p.jour === jour && p.scene_id === sceneId && p.heure_fin > creneau)
     .sort((a, b) => a.heure_debut - b.heure_debut)[0];
 }
 
 // Set en cours sur une scene a l'instant donne (undefined si la scene est en pause).
-export function setActuel(donnees: Donnees, jour: number, sceneId: number, creneau: number) {
-  return donnees.programmation.find(
+export function setActuel(
+  programmation: Concert[], jour: number, sceneId: number, creneau: number,
+) {
+  return programmation.find(
     (p) =>
       p.jour === jour &&
       p.scene_id === sceneId &&

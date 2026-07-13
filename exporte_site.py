@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from allocation.optimisation import INSTALLATIONS
 from dashboard import menus, reco
 
 DOSSIER = Path(__file__).parent / "data"
@@ -40,17 +41,44 @@ def exporte():
     metriques = charge(conn, "metriques_prevision")
     importances = charge(conn, "importances_variables")
     anomalies = charge(conn, "anomalies")
+    anticipation_alertes = charge(conn, "anticipation_alertes")
     initiale = charge(conn, "allocation_initiale")
     figee = charge(conn, "allocation_figee")
     ajustee = charge(conn, "allocation_ajustee")
+    dimensionnement = charge(conn, "dimensionnement")
+    transport_flux = charge(conn, "transport_flux")
+    transport_metriques = charge(conn, "transport_metriques")
     synthese = charge(conn, "scenarios_synthese")
     details = charge(conn, "scenarios_details")
     visiteurs = charge(conn, "visiteurs")
     evenements = charge(conn, "evenements")
+    historique_editions = charge(conn, "historique_editions")
+    billetterie = charge(conn, "billetterie")
+    prevision_edition = charge(conn, "prevision_edition")
+    cartes_affluence = charge(conn, "cartes_affluence")
+    cartes_flux = charge(conn, "cartes_flux")
+    cartes_anomalies = charge(conn, "cartes_anomalies")
+    cartes_programmation = charge(conn, "cartes_programmation")
     conn.close()
 
     recommandations = reco.genere(previsions, scenes, anomalies, initiale, ajustee, synthese)
     flux = calcule_flux(evenements)
+
+    annee_courante = int(cartes_affluence["annee"].max())
+    editions_carte = []
+    for an in sorted(cartes_affluence["annee"].unique()):
+        editions_carte.append({
+            "annee": int(an),
+            "type": "prediction" if an == annee_courante else "historique",
+            "affluence": cartes_affluence[cartes_affluence["annee"] == an]
+                .drop(columns="annee").to_dict("records"),
+            "flux": cartes_flux[cartes_flux["annee"] == an]
+                .drop(columns="annee").to_dict("records"),
+            "anomalies": cartes_anomalies[cartes_anomalies["annee"] == an]
+                .drop(columns="annee").to_dict("records"),
+            "programmation": cartes_programmation[cartes_programmation["annee"] == an]
+                .drop(columns="annee").to_dict("records"),
+        })
 
     pct_initiale = round(float(initiale["couverture"].mean()) * 100, 1)
     pct_figee = round(float(figee["couverture"].mean()) * 100, 1)
@@ -71,18 +99,45 @@ def exporte():
                       for k, v in metriques.iloc[0].items()},
         "importances": importances.to_dict("records"),
         "anomalies": anomalies.to_dict("records"),
+        "anticipation": {
+            "precision": float(metriques.iloc[0]["antic_precision"]),
+            "rappel": float(metriques.iloc[0]["antic_rappel"]),
+            "predites": int(metriques.iloc[0]["antic_predites"]),
+            "reelles": int(metriques.iloc[0]["antic_reelles"]),
+            "correctes": int(metriques.iloc[0]["antic_correctes"]),
+            "alertes": anticipation_alertes.to_dict("records"),
+        },
         "allocation": {
             "couverture_initiale": pct_initiale,
             "couverture_figee": pct_figee,
             "couverture_ajustee": pct_ajustee,
             "lignes": ajustee.to_dict("records"),
         },
+        "dimensionnement": {
+            "niveaux": dimensionnement.drop_duplicates("niveau_pct")[
+                ["niveau_pct", "couverture_globale", "creneaux_decouverts"]]
+                .to_dict("records"),
+            "domaines": dimensionnement[["niveau_pct", "type", "effectif",
+                                         "couverture_domaine"]].to_dict("records"),
+            "ideal": dimensionnement.drop_duplicates("type")[
+                ["type", "ideal", "reference"]].to_dict("records"),
+            "installations": INSTALLATIONS,
+        },
+        "transport": {
+            **{k: (int(v) if isinstance(v, (int, np.integer)) else float(v))
+               for k, v in transport_metriques.iloc[0].items()},
+            "flux": transport_flux.to_dict("records"),
+        },
         "recommandations": recommandations,
         "scenarios": {
             "synthese": synthese.to_dict("records"),
             "details": details.to_dict("records"),
         },
+        "historique_editions": historique_editions.to_dict("records"),
+        "billetterie": billetterie.to_dict("records"),
+        "prevision_edition": prevision_edition.to_dict("records"),
         "flux": flux.to_dict("records"),
+        "cartes_editions": editions_carte,
         "kpi": {
             "visiteurs_total": int(len(visiteurs)),
             "visiteurs_par_jour": {int(j): int(n) for j, n in

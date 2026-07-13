@@ -5,7 +5,7 @@ import { monde } from "../logique/festival";
 // Sol, enceinte du site et portique d'entree. Style sombre type carte de nuit.
 export function Terrain() {
   const coins = useMemo(() => {
-    const c = [monde(1, 2), monde(99, 2), monde(99, 92), monde(1, 92), monde(1, 2)];
+    const c = [monde(-3, -1), monde(103, -1), monde(103, 95), monde(-3, 95), monde(-3, -1)];
     return c.map(([x, z]) => [x, 0.06, z] as [number, number, number]);
   }, []);
 
@@ -25,7 +25,7 @@ export function Terrain() {
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 4]} receiveShadow>
-        <planeGeometry args={[210, 190]} />
+        <planeGeometry args={[250, 230]} />
         <meshStandardMaterial color="#0d1119" roughness={1} metalness={0} />
       </mesh>
 

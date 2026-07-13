@@ -48,24 +48,32 @@ export interface Concert {
   popularite: number;
 }
 
-export interface Donnees {
-  scenes: SceneFestival[];
+export interface EditionCarte {
+  annee: number;
+  type: "historique" | "prediction";
   affluence: LigneAffluence[];
   flux: LigneFlux[];
-  pois: Poi[];
   anomalies: Anomalie[];
   programmation: Concert[];
+}
+
+export interface Donnees {
+  scenes: SceneFestival[];
+  pois: Poi[];
   jours_long: Record<string, string>;
+  editions: EditionCarte[];
 }
 
 export interface OptionsMontage {
   donnees: Donnees;
+  edition?: number;
   jour?: number;
   onScene?: (sceneId: number) => void;
   onPoi?: (poi: Poi) => void;
 }
 
 export interface ApiCarte3D {
+  setEdition: (annee: number) => void;
   setJour: (jour: number) => void;
   demonte: () => void;
 }

@@ -71,7 +71,7 @@
     <div class="hero">
       <div class="hero-blobs" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="hero-int">
-        <p class="hero-sur">4 · 5 · 6 septembre 2026 — capacité 50 000 personnes / jour</p>
+        <p class="hero-sur">5ᵉ édition — 4 · 5 · 6 septembre 2026 — capacité 50 000 personnes / jour</p>
         <h1>NOVA<br><span>FESTIVAL</span></h1>
         <p class="hero-sous">3 scènes. 48 artistes. Un système intelligent qui prévoit l'affluence,
         détecte les incidents et réalloue les équipes en temps réel.</p>
@@ -100,7 +100,7 @@
         <div class="graph" id="graph-anomalies-jour"></div>
       </div>
     </div>
-    <p class="note-pipeline">Pipeline : simulation à événements discrets · prévision (régression linéaire) ·
+    <p class="note-pipeline">Pipeline : simulation à événements discrets · prévision (historique 2022-2025 + comparatif de modèles) ·
     détection (règles + Isolation Forest) · allocation (programmation linéaire) · scénarios (rejeu Monte Carlo)</p>
   </section>
 
@@ -124,11 +124,13 @@
     <header class="entete-page">
       <h1>Carte du site</h1>
       <p>Carte 3D interactive : molette pour zoomer, clic gauche pour tourner, clic droit pour se déplacer,
-      double-clic sur une scène pour la centrer. La foule, le halo coloré (vert &lt; 70 %, jaune 70–90 %,
-      orange 90–100 %, rouge &gt; 100 %), les marcheurs et les rubans lumineux suivent les données réelles
-      du créneau. Cliquer sur une scène ou un stand pour le détail. Le bouton lecture rejoue la journée.</p>
+      double-clic sur une scène pour la centrer. On rejoue chaque édition heure par heure — les éditions
+      2022 à 2025 sont le déroulé réel passé (données identiques à chaque lancement), et 2026 est la
+      simulation de notre prédiction (affluence pilotée par les prévisions, line-up annoncé). Cliquer sur
+      une scène ou un stand pour le détail. Le bouton lecture rejoue la journée.</p>
     </header>
     <div class="barre-outils">
+      <div class="segments segments-edition" id="seg-edition"></div>
       <div class="segments" id="seg-carte"></div>
       <div class="mini-kpis" id="kpi-carte"></div>
     </div>
@@ -163,10 +165,23 @@
 
   <section class="page" id="page-previsions">
     <header class="entete-page">
-      <h1>Prévision de l'affluence — dimanche 6 septembre</h1>
-      <p>Régression linéaire entraînée sur le vendredi et le samedi, comparée à une forêt aléatoire
-      et à un modèle naïf. Avec deux jours d'historique, le modèle linéaire généralise mieux.</p>
+      <h1>Prévision de l'affluence</h1>
+      <p>Deux horizons. D'abord la fréquentation de la 5ᵉ édition, estimée par la tendance des
+      quatre éditions précédentes (dimensionnement). Puis la prévision opérationnelle par scène
+      et par créneau de 30 min pour le dimanche : modèles entraînés sur les éditions 2022-2025
+      plus le vendredi et le samedi 2026, comparés et départagés sur les données du dimanche.</p>
     </header>
+    <div class="carte-graph">
+      <h3>Affluence par édition — la 5ᵉ année prédite (tendance + billetterie)</h3>
+      <div class="graph" id="graph-editions"></div>
+    </div>
+    <div class="carte-graph">
+      <h3>Billetterie en ligne — état des ventes à 2 mois de l'événement</h3>
+      <p class="sous-note">Les pré-ventes sont un signal direct de la demande : le samedi part le
+      plus vite (têtes d'affiche). On projette la fréquentation finale, puis on la combine avec la
+      tendance historique pour une prévision plus robuste — c'est ce qui rattrape le samedi.</p>
+      <div id="billetterie-panneau"></div>
+    </div>
     <div class="grille-kpi" id="kpi-previsions"></div>
     <div class="segments" id="seg-previsions"></div>
     <div class="carte-graph">
@@ -193,6 +208,18 @@
       <h3>Détail des anomalies</h3>
       <div class="conteneur-table" id="table-anomalies"></div>
     </div>
+
+    <h2 class="titre-section">Anticipation — prévoir les surcharges avant l'événement</h2>
+    <p class="sous-note">La détection ci-dessus réagit à ce qui se passe. Ici, on va plus loin :
+    on applique la règle de surcharge sur la <b>prévision d'affluence</b> du dimanche 6 septembre 2026
+    pour <b>alerter à l'avance</b> (avant le jour J), puis on vérifie combien de ces alertes se sont
+    réellement produites. On n'anticipe que les surcharges (prévisibles depuis l'affluence) — pas les
+    pannes ni les micro-mouvements de foule, par nature imprévisibles.</p>
+    <div class="grille-kpi" id="kpi-anticipation"></div>
+    <div class="carte-graph">
+      <h3>Alertes anticipées (dimanche 6 septembre)</h3>
+      <div class="conteneur-table" id="table-anticipation"></div>
+    </div>
   </section>
 
   <section class="page" id="page-allocation">
@@ -209,6 +236,44 @@
     <div class="carte-graph">
       <h3>Besoin et alloué par scène (cumul de la journée)</h3>
       <div class="graph" id="graph-besoin-alloue"></div>
+    </div>
+
+    <h2 class="titre-section">Dimensionnement du personnel — combien déployer ?</h2>
+    <p class="sous-note">D'après la prévision d'affluence du <b>dimanche 6 septembre 2026</b>, on connaît
+    le besoin en personnel (via les ratios d'encadrement). Mais faut-il vraiment embaucher 100 % de cet
+    effectif de pointe ? On teste tous les niveaux d'un coup : à chaque niveau, on ré-optimise la
+    répartition sur la journée et on mesure la couverture. En dessous, des créneaux restent à découvert
+    (risque) ; au-dessus, c'est du personnel payé pour rien.</p>
+    <div class="deux-colonnes">
+      <div class="carte-graph">
+        <h3>Couverture des besoins selon l'effectif déployé</h3>
+        <div class="graph" id="graph-dimensionnement"></div>
+      </div>
+      <div class="carte-graph">
+        <h3>Effectif idéal par domaine</h3>
+        <div id="dimensionnement-ideal"></div>
+        <p class="sous-note" style="margin-top:14px">Ce sont des effectifs à l'échelle du <b>site
+        entier</b>, répartis sur toutes les installations d'un festival de 50 000 personnes. La carte
+        du site n'en affiche que quelques marqueurs représentatifs (1 stand, 3 toilettes…), pas
+        l'inventaire complet.</p>
+      </div>
+    </div>
+
+    <h2 class="titre-section">Transport — dimensionner la flotte de navettes</h2>
+    <p class="sous-note">Les navettes ne se répartissent pas par scène : c'est un service à l'échelle
+    du site, qui gère <b>deux flux</b>. À l'ouverture, elles tournent à plein pour <b>amener</b> le public
+    (dès 15h30) ; en fin de soirée, elles doivent <b>évacuer</b> la vague de départs qui explose à la
+    clôture. On dimensionne la flotte sur la contrainte la plus dure — l'évacuation en 2 h — et on en
+    déduit le personnel transport.</p>
+    <div class="deux-colonnes">
+      <div class="carte-graph">
+        <h3>Charge des navettes au fil de la soirée</h3>
+        <div class="graph" id="graph-transport"></div>
+      </div>
+      <div class="carte-graph">
+        <h3>Flotte de navettes à prévoir</h3>
+        <div id="transport-resume"></div>
+      </div>
     </div>
   </section>
 
