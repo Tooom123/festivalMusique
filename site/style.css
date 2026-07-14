@@ -213,12 +213,16 @@ body.drawer-ouvert #drawer {
 .drawer-corps {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 22px 26px 40px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-content: start;
 }
+/* Chaque cellule de la grille peut retrecir sous sa largeur de contenu :
+   evite qu'un tableau/graphe large pousse la grille et cree un scroll horizontal. */
+.drawer-corps > * { min-width: 0; }
 /* Éléments pleine largeur dans la grille 2 colonnes du modal. */
 .drawer-corps > .bloc-hero,
 .drawer-corps > .bloc-txt,
