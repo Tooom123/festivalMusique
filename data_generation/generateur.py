@@ -152,13 +152,13 @@ def genere_equipes(rng, multiplicateurs=None):
 
 def genere_points_interet():
     donnees = [
-        [1, "stand_boisson", "Bar - Le Gosier de l'Enfer", 35, 62],
-        [2, "stand_nourriture", "Food Truck - Les Braises", 65, 62],
-        [3, "stand_mixte", "Buvette & Snack - La Fournaise", 50, 40],
-        [4, "toilettes", "Toilettes ouest", 8, 72],
-        [5, "toilettes", "Toilettes est", 92, 72],
-        [6, "toilettes", "Toilettes entree", 38, 8],
-        [7, "secourisme", "Poste de secours", 62, 8],
+        [1, "stand_boisson", "Bar — Scénarios & coûts", 35, 62],
+        [2, "stand_nourriture", "Food truck — Scénarios & coûts", 65, 62],
+        [3, "stand_mixte", "Buvette — Scénarios & coûts", 50, 40],
+        [4, "toilettes", "Sanitaires ouest — Allocation", 8, 72],
+        [5, "toilettes", "Sanitaires est — Allocation", 92, 72],
+        [6, "toilettes", "Sanitaires entrée — Allocation", 38, 8],
+        [7, "secourisme", "Poste de secours — Anomalies", 62, 8],
     ]
     return pd.DataFrame(donnees, columns=["poi_id", "type", "nom", "x", "y"])
 
