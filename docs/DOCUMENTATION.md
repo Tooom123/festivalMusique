@@ -1,6 +1,3 @@
-<!--faut remplacer les membres par les noms-->
-
-
 # Documentation technique — Festival Musical Intelligent
 
 ## 1. Objectif

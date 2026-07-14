@@ -1,5 +1,3 @@
-<!--faut remplacer les membres par les noms-->
-
 # Festival Musical Intelligent — SAE S8 2026
 
 Système intelligent d'aide à la gestion d'un festival musical : simulation de données,
