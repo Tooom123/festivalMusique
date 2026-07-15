@@ -1,18 +1,17 @@
 # Suivi de projet — Festival Musical Intelligent
 
-Groupe de 5 — soutenance le 15/07/2026, rapport à remettre le 14/07/2026.
-
-<!--faut remplacer les membres par les noms-->
+Groupe de 6 — soutenance le 15/07/2026, rapport à remettre le 14/07/2026.
 
 ## Répartition des tâches
 
 | Membre | Responsabilité principale | Fichiers |
 |---|---|---|
-| Artus | Génération des données + simulation à événements discrets, intégration pipeline | `data_generation/`, `run_pipeline.py` |
-| Membre 2 | Prévision de l'affluence | `forecasting/` |
-| Membre 3 | Détection des anomalies | `anomaly_detection/` |
-| Membre 4 | Allocation des ressources | `allocation/` |
-| Membre 5 | Scénarios + dashboard | `scenario_simulation/`, `dashboard/` |
+| Cescon Artus | Génération des données + simulation à événements discrets, intégration pipeline | `data_generation/`, `run_pipeline.py` |
+| Brouillard Estebane | Prévision de l'affluence | `forecasting/` |
+| Deguest Théodore | Détection des anomalies | `anomaly_detection/` |
+| Angles Tom | Allocation des ressources | `allocation/` |
+| Hiegel Aymeric | Scénarios + dashboard | `scenario_simulation/`, `dashboard/` |
+| Le-Bronec Timothé | Site web de restitution + carte 3D | `site/`, `carte3d/`, `exporte_site.py` |
 
 Rédaction du rapport et préparation de la soutenance : tout le monde, chacun sur sa partie.
 
@@ -95,14 +94,14 @@ date de soutenance.
   proactive qui relie prévision↔détection. Nouvelle section sur la page Anomalies.
 - 14/07 (nuit, fin) : intégration propre du transport (5ᵉ domaine de ressources de
   l'énoncé). Contrairement aux équipes par scène, la flotte de navettes est
-  dimensionnée à l'échelle du site sur le pic de départs (~15 000 à la clôture) →
-  24 navettes, 48 agents, cohérent avec le personnel transport généré. Comble le seul
+  dimensionnée à l'échelle du site sur le pic de départs (~20 000 à la clôture) →
+  33 navettes, 66 agents, cohérent avec le personnel transport généré. Comble le seul
   angle mort de l'allocation (transport auparavant généré/facturé mais non alloué).
 - 13/07 (relecture) : enrichissement du transport suite à revue — le service gère
   désormais **deux flux** (arrivées à l'ouverture dès 15h30 + évacuation de clôture),
   rejoués à travers la flotte par un modèle de file. Le graphique montre la charge des
   navettes heure par heure (arrivées vs départs) avec la ligne de débit de la flotte, et
-  le calcul des 24 navettes est explicité (5 237 à évacuer ÷ 220 places/2 h). Correction
+  le calcul des 33 navettes est explicité (7 086 à évacuer ÷ 220 places/2 h). Correction
   d'un artefact d'affichage (axes en « 15 k » et non « 15,000 », créneaux après minuit).
 - 13/07 (relecture, suite) : levée d'une incohérence relevée en revue — les effectifs
   idéaux (food 220, sanitaire 133, médical 101) juraient avec la carte qui ne montre
@@ -111,6 +110,21 @@ date de soutenance.
   50 000 personnes (`INSTALLATIONS` : ~24 points resto, ~30 blocs sanitaires, ~6 postes
   de secours) et on affiche l'effectif par installation (~9/stand, ~4/bloc, ~17/poste).
   Aucun calcul touché, la carte reste schématique (note explicite ajoutée).
+- 13/07 (relecture, suite) : l'allocation des ressources couvre désormais **les 3 jours**
+  (elle ne portait que sur le dimanche). Le modèle de prévision opérationnelle est
+  appliqué aux trois jours (même formule), puis l'optimisation par créneau tourne sur
+  tout le festival — l'optimiseur gérait déjà le multi-jour. Le dimensionnement et la
+  flotte de navettes sont calés sur le jour le plus chargé (samedi) : flotte 33 navettes.
+  Dimensionnement du personnel basé sur les besoins **prévus** (pas gonflés par les
+  anomalies) : idéal sécurité 386 / food 257 / sanitaire 155 / médical 97, à comparer au
+  déployé (400 / 280 / 160 / 100) → bien dimensionné, petite marge. Ligne « effectif
+  disponible » ajoutée sur le graphe d'allocation pour expliquer le plafond. Sélecteur de
+  jour ajouté sur la page Allocation (site + dashboard), recos horodatées par jour.
+  Couverture moyennée sur 3 jours : 99,6 → 92,2 (figée) → 96,7 % (réallouée).
+- 13/07 (relecture, finitions) : libellés de scénarios propres partout (« Sécurité
+  renforcée », « Scènes DJ/Rock agrandies »… via `scenarios.LIBELLES`, source unique
+  exportée) au lieu des clés brutes ; correction de l'axe Y aberrant du graphe de
+  couverture des scénarios (bornes explicites 98-100 %, formateur non écrasé).
 - 13/07 (relecture, suite) : la carte 3D montre désormais l'infrastructure réelle —
   couche procédurale déterministe d'installations (`logique/installations.ts` :
   ~24 stands de restauration, ~30 blocs sanitaires, 6 postes de secours, postes de

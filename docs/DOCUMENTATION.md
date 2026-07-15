@@ -1,6 +1,3 @@
-<!--faut remplacer les membres par les noms-->
-
-
 # Documentation technique — Festival Musical Intelligent
 
 ## 1. Objectif
@@ -191,9 +188,10 @@ comme telle : elle sert à dimensionner avant le festival, pas à piloter en tem
 
 ### 4.3 Allocation des ressources — programmation linéaire
 
-- **Modèle** : pour chaque créneau du dimanche, minimiser le manque de couverture
-  (besoin non couvert, pondéré fortement) sous contrainte d'effectif disponible par
-  type d'équipe. Variables entières (personnes), résolu avec PuLP + solveur CBC.
+- **Modèle** : pour chaque créneau de **chacun des 3 jours**, minimiser le manque de
+  couverture (besoin non couvert, pondéré fortement) sous contrainte d'effectif
+  disponible par type d'équipe. Variables entières (personnes), résolu avec PuLP + CBC.
+  La prévision opérationnelle (même modèle que le dimanche) est appliquée aux 3 jours.
 - **Besoins** : dérivés des prévisions par des ratios d'encadrement
   (1 agent de sécurité / 100 visiteurs, 1 food / 150, 1 sanitaire / 250, 1 médical / 400) —
   à l'échelle du festival (jusqu'à 50 000 personnes/jour), cela représente des équipes
@@ -207,33 +205,34 @@ comme telle : elle sert à dimensionner avant le festival, pas à piloter en tem
   ré-optimisée. On mesure l'apport de cette réallocation en comparant avec
   l'allocation initiale figée.
 - **Dimensionnement du personnel** : au-delà de « comment répartir », l'allocation
-  répond à « combien déployer ». La prévision donne le besoin en personnel ; on teste
-  alors, en une passe, cinq niveaux d'effectif (50 / 75 / 90 / 100 / 110 % du besoin
-  de pointe, c'est-à-dire le maximum d'agents nécessaires simultanément). Pour chaque
-  niveau, on plafonne l'effectif et on ré-optimise la répartition sur la même journée,
-  puis on mesure la couverture et le nombre de créneaux à découvert. L'effectif idéal
-  d'un domaine est le plus petit niveau testé couvrant ≥ 99 % de ses besoins. On
-  réutilise le même solveur : le calcul reste léger. Ces effectifs (sécurité 382,
-  food 220, sanitaire 133, médical 101) sont à l'échelle du **site entier** : pour
-  qu'ils restent lisibles, on les rapporte à un nombre réaliste d'installations pour
-  50 000 personnes (`INSTALLATIONS` : ≈ 24 points de restauration, ≈ 30 blocs
-  sanitaires, ≈ 6 postes de secours) → effectif par installation (food ~9, sanitaire
-  ~4, médical ~17). La carte du site n'affiche que des marqueurs représentatifs, pas
-  l'inventaire complet — d'où l'écart apparent entre « 220 agents food » et le stand
-  unique dessiné.
+  répond à « combien déployer ». On dimensionne sur les **besoins prévus** (planification
+  à partir de la prévision), pas sur les besoins gonflés par les anomalies : on recrute
+  pour la prévision et on absorbe les incidents par réallocation, pas en sur-embauchant
+  partout. On teste, en une passe, cinq niveaux d'effectif (50 / 75 / 90 / 100 / 110 % du
+  besoin de pointe — le maximum simultané, atteint le **jour le plus chargé**, samedi).
+  Pour chaque niveau, on plafonne l'effectif, on ré-optimise et on mesure la couverture
+  et les créneaux à découvert. L'effectif idéal d'un domaine est le plus petit niveau
+  couvrant ≥ 99 % de ses besoins : **sécurité 386, food 257, sanitaire 155, médical 97**
+  (90 % du pic prévu dans chaque domaine). À comparer à ce qui est **déployé** (sécurité
+  400, food 280, sanitaire 160, médical 100) : le festival est bien dimensionné, avec une
+  petite marge. Ces effectifs sont à l'échelle du **site entier** ; on les rapporte à un
+  nombre réaliste d'installations pour 50 000 personnes (`INSTALLATIONS` : ≈ 24 points de
+  restauration, ≈ 30 blocs sanitaires, ≈ 6 postes de secours) → effectif par installation
+  (food ~11, sanitaire ~5, médical ~16). La carte du site n'affiche que des marqueurs
+  représentatifs, pas l'inventaire complet.
 - **Transport (navettes) — dimensionnement site-level** : les 4 domaines ci-dessus se
   répartissent par scène ; le transport, lui, est un service à l'échelle du site, piloté
   par **deux flux** — les **arrivées** (concentrées à l'ouverture, la flotte tourne à plein
   dès 15h30) et les **départs**, qui montent au fil de la soirée puis explosent à la
-  clôture (~15 000 personnes partent vers minuit). On dimensionne la flotte sur la
-  contrainte la plus dure — évacuer la vague de cloture en 2 h — puis on rejoue les deux
-  flux à travers cette flotte (modèle de file : ce qui dépasse le débit d'un créneau
-  attend le suivant), ce qui donne la charge réelle des navettes heure par heure.
-  Calcul : 14 963 départs × 35 % en navette = 5 237 personnes à évacuer, sur 4 rotations
-  de 55 places (2 h) → 5 237 ÷ 220 ≈ **24 navettes, 48 agents**, cohérent avec le personnel
-  transport généré. Hypothèses assumées et documentées (55 personnes/rotation, 35 % de
-  report modal — le reste en voiture/à pied/en TC, 2 h de fenêtre). Les 5 domaines de
-  ressources de l'énoncé (sécurité, food, sanitaire, médical, transport) sont ainsi
+  clôture (~20 000 personnes partent vers minuit le samedi, jour le plus chargé). On
+  dimensionne la flotte sur la contrainte la plus dure — évacuer la vague de cloture en
+  2 h — puis on rejoue les deux flux à travers cette flotte (modèle de file : ce qui
+  dépasse le débit d'un créneau attend le suivant), ce qui donne la charge réelle des
+  navettes heure par heure. Calcul : 20 246 départs × 35 % en navette = 7 086 personnes à
+  évacuer, sur 4 rotations de 55 places (2 h) → 7 086 ÷ 220 ≈ **33 navettes, 66 agents**.
+  Hypothèses assumées et documentées (55 personnes/rotation, 35 % de report modal — le
+  reste en voiture/à pied/en TC, 2 h de fenêtre). Les 5 domaines de ressources de
+  l'énoncé (sécurité, food, sanitaire, médical, transport) sont ainsi
   tous couverts, chacun avec la logique adaptée (par scène vs site-level).
 
 ### 4.4 Évaluation de scénarios — rejeu Monte Carlo
@@ -345,33 +344,35 @@ Anticipation des surcharges (dimanche) : **7 surcharges annoncées avant l'évé
 6 confirmées** le jour J → précision 86 %, rappel 86 %. On prévoit donc à l'avance,
 avec une fiabilité honnête, où et quand les scènes vont saturer.
 
-### Allocation (dimanche 6 septembre)
+### Allocation (les 3 jours)
 
-| Situation | Couverture des besoins |
+| Situation | Couverture des besoins (moyenne 3 jours) |
 |---|---|
-| Besoins prévus, allocation optimisée | 100.0 % |
-| Besoins ajustés (anomalies), allocation figée | 94.6 % |
-| Besoins ajustés, après réallocation | **99.7 %** |
+| Besoins prévus, allocation optimisée | 99.6 % |
+| Besoins ajustés (anomalies), allocation figée | 92.2 % |
+| Besoins ajustés, après réallocation | **96.7 %** |
 
 La réallocation déclenchée par les anomalies récupère l'essentiel de la couverture
-perdue, à effectifs constants.
+perdue, à effectifs constants. Les effectifs générés étant volontairement serrés, la
+couverture ne remonte pas tout à fait à 100 % le jour le plus chargé — c'est justement
+ce que le dimensionnement ci-dessous chiffre.
 
-Dimensionnement du personnel (couverture par niveau d'effectif) :
+Dimensionnement du personnel (couverture par niveau d'effectif du pic prévu, samedi) :
 
 | Effectif déployé | Couverture | Créneaux à découvert |
 |---|---|---|
-| 50 % | 79.5 % | 60 |
-| 75 % | 94.3 % | 23 |
-| 90 % | 98.9 % | 13 |
+| 50 % | 84.4 % | 155 |
+| 75 % | 97.7 % | 48 |
+| 90 % | 99.7 % | 12 |
 | **100 %** | **100.0 %** | **0** |
 | 110 % | 100.0 % | 0 |
 
 Enseignement : la couverture monte vite puis **plafonne à 100 %** — déployer plus que
 l'effectif de pointe ne sert à rien (personnel payé pour rien), et descendre sous
 90 % ouvre des zones à risque. Effectif idéal par domaine (plus petit niveau couvrant
-≥ 99 % des besoins) : **sécurité 382, food 220, sanitaire 133, médical 101**. Détail
-intéressant : sécurité et médical suffisent à 90 % de leur pic (besoins brefs), tandis
-que food et sanitaire réclament 100 % — le juste dimensionnement diffère par domaine.
+≥ 99 % des besoins) : **sécurité 386, food 257, sanitaire 155, médical 97** — soit 90 %
+du pic prévu dans chaque domaine. C'est légèrement en dessous de ce qui est déployé
+(400 / 280 / 160 / 100) : le festival est correctement dimensionné, avec une petite marge.
 
 ### Scénarios (moyenne sur 3 runs)
 

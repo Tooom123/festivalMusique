@@ -828,9 +828,14 @@ function initAllocation() {
     carteKpi("Besoins ajustés, allocation figée", al.couverture_figee.toFixed(1) + " %", "sans réaction aux anomalies", "negatif") +
     carteKpi("Après réallocation", al.couverture_ajustee.toFixed(1) + " %", `+${delta} pts de couverture`, "positif");
 
+  const jours = [...new Set(al.lignes.map((l) => l.jour))].sort((a, b) => a - b);
   const types = [...new Set(al.lignes.map((l) => l.type))].sort();
-  creerSegments("seg-allocation", types.map((t) => ({ label: t, valeur: t })), dessineAllocation, 0);
-  dessineAllocation(types[0]);
+  allocEtat = { jour: jours[0], type: types[0] };
+  creerSegments("seg-allocation-jour", jours.map((j) => ({ label: jourLong(j), valeur: j })),
+    (j) => { allocEtat.jour = j; dessineAllocation(); }, 0);
+  creerSegments("seg-allocation", types.map((t) => ({ label: t, valeur: t })),
+    (t) => { allocEtat.type = t; dessineAllocation(); }, 0);
+  dessineAllocation();
 
   dessineDimensionnement();
 }
@@ -844,6 +849,9 @@ function initTransport() {
 
 const LIBELLES_DOMAINE = { securite: "Sécurité", food: "Food", sanitaire: "Sanitaire",
                            medical: "Médical", transport: "Transport" };
+
+// Selection courante du panneau Allocation (jour + domaine).
+let allocEtat = { jour: 1, type: "food" };
 
 function dessineTransport() {
   const t = DONNEES.transport;
@@ -882,7 +890,8 @@ function dessineTransport() {
   document.getElementById("transport-resume").innerHTML =
     `<div class="dim-ligne"><span class="dim-domaine">Pic de départs</span>
        <span class="dim-nombre" style="color:#ff7a18">${fmt(t.pic_departs)}</span>
-       <span class="dim-note">personnes à évacuer à la clôture (~minuit)</span></div>
+       <span class="dim-note">personnes à évacuer à la clôture (~minuit),
+       ${jourLong(t.jour).replace(/ 2026$/, "")} — le jour le plus chargé</span></div>
      <div class="dim-ligne"><span class="dim-domaine">Flotte idéale</span>
        <span class="dim-nombre">${fmt(t.flotte_ideale)}</span>
        <span class="dim-note">navettes</span></div>
@@ -935,10 +944,15 @@ function dessineDimensionnement() {
   });
 
   const inst = dim.installations || {};
+  const dispo = (dim && DONNEES.allocation.disponible) || {};
+  const dispoMax = (t) => Math.max(0, ...(dispo[t] || [0]));
   document.getElementById("dimensionnement-ideal").innerHTML = dim.ideal
     .sort((a, b) => b.ideal - a.ideal)
     .map((d) => {
-      const economie = d.reference - d.ideal;
+      const deploye = dispoMax(d.type);
+      const noteDispo = deploye
+        ? `agents (pic prévu ${fmt(d.reference)} ; on en déploie jusqu'à ${fmt(deploye)})`
+        : `agents (pic prévu ${fmt(d.reference)})`;
       const i = inst[d.type];
       let repartition = "";
       if (i && i.nombre) {
@@ -951,34 +965,44 @@ function dessineDimensionnement() {
       return `<div class="dim-ligne">
         <span class="dim-domaine">${LIBELLES_DOMAINE[d.type] || d.type}</span>
         <span class="dim-nombre">${fmt(d.ideal)}</span>
-        <span class="dim-note">${economie > 0
-          ? `agents (soit ${economie} de moins que le pic ${fmt(d.reference)})`
-          : `agents (le juste besoin de pointe)`}</span>
+        <span class="dim-note">${noteDispo}</span>
         ${repartition}
       </div>`;
     })
     .join("");
 }
 
-function dessineAllocation(type) {
-  const lignes = DONNEES.allocation.lignes.filter((l) => l.type === type);
+function dessineAllocation() {
+  const { jour, type } = allocEtat;
+  const lignes = DONNEES.allocation.lignes.filter((l) => l.type === type && l.jour === jour);
   const creneaux = [...new Set(lignes.map((l) => l.creneau))].sort((a, b) => a - b);
   const heures = creneaux.map(heureTexte);
+
+  const dispo = DONNEES.allocation.disponible || {};
+  const dispoMap = {};
+  (dispo._creneaux || []).forEach((c, i) => { dispoMap[c] = (dispo[type] || [])[i]; });
+  const dispoData = creneaux.map((c) => dispoMap[c] ?? null);
 
   graphe("graph-allocation").setOption({
     tooltip: { ...tooltipBase(), trigger: "axis" },
     legend: legendeBase(),
     grid: { left: 48, right: 16, top: 42, bottom: 30 },
     xAxis: { type: "category", data: heures, ...axesBase(), splitLine: { show: false } },
-    yAxis: { type: "value", name: "Personnel alloué", nameTextStyle: { color: C.axe }, ...axesBase() },
-    series: [1, 2, 3].map((s) => ({
-      name: NOMS_SCENES[s], type: "bar", stack: "total", barWidth: "58%",
-      itemStyle: { color: C.scene[s] },
-      data: creneaux.map((cr) => {
-        const l = lignes.find((x) => x.creneau === cr && x.scene_id === s);
-        return l ? l.alloue : 0;
-      }),
-    })),
+    yAxis: { type: "value", name: "Personnel", nameTextStyle: { color: C.axe },
+      boundaryGap: [0, "14%"], ...axesBase() },
+    series: [
+      ...[1, 2, 3].map((s) => ({
+        name: NOMS_SCENES[s], type: "bar", stack: "total", barWidth: "58%",
+        itemStyle: { color: C.scene[s] },
+        data: creneaux.map((cr) => {
+          const l = lignes.find((x) => x.creneau === cr && x.scene_id === s);
+          return l ? l.alloue : 0;
+        }),
+      })),
+      { name: "Effectif disponible", type: "line", step: "middle", symbol: "none",
+        lineStyle: { color: C.texte, type: "dashed", width: 1.5 },
+        data: dispoData, z: 5 },
+    ],
   }, true);
 
   const parScene = [1, 2, 3].map((s) => ({

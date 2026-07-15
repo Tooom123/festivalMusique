@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from allocation.optimisation import INSTALLATIONS
+from scenario_simulation.scenarios import LIBELLES as LIBELLES_SCENARIOS
 from dashboard import menus, reco
 
 DOSSIER = Path(__file__).parent / "data"
@@ -38,6 +39,7 @@ def exporte():
     pois = charge(conn, "points_interet")
     affluence = charge(conn, "affluence_creneau")
     previsions = charge(conn, "previsions")
+    previsions_3j = charge(conn, "previsions_3j")
     metriques = charge(conn, "metriques_prevision")
     importances = charge(conn, "importances_variables")
     anomalies = charge(conn, "anomalies")
@@ -45,6 +47,7 @@ def exporte():
     initiale = charge(conn, "allocation_initiale")
     figee = charge(conn, "allocation_figee")
     ajustee = charge(conn, "allocation_ajustee")
+    equipes = charge(conn, "equipes")
     dimensionnement = charge(conn, "dimensionnement")
     transport_flux = charge(conn, "transport_flux")
     transport_metriques = charge(conn, "transport_metriques")
@@ -61,7 +64,7 @@ def exporte():
     cartes_programmation = charge(conn, "cartes_programmation")
     conn.close()
 
-    recommandations = reco.genere(previsions, scenes, anomalies, initiale, ajustee, synthese)
+    recommandations = reco.genere(previsions_3j, scenes, anomalies, initiale, ajustee, synthese)
     flux = calcule_flux(evenements)
 
     annee_courante = int(cartes_affluence["annee"].max())
@@ -83,6 +86,17 @@ def exporte():
     pct_initiale = round(float(initiale["couverture"].mean()) * 100, 1)
     pct_figee = round(float(figee["couverture"].mean()) * 100, 1)
     pct_ajustee = round(float(ajustee["couverture"].mean()) * 100, 1)
+
+    # Effectif disponible par domaine et par creneau (fenetres de dispo des equipes) :
+    # sert a tracer le plafond de personnel sur le graphe d'allocation.
+    creneaux_alloc = sorted(int(c) for c in ajustee["creneau"].unique())
+    disponible = {}
+    for t in equipes["type"].unique():
+        eq_t = equipes[equipes["type"] == t]
+        disponible[t] = [
+            int(eq_t[(eq_t["dispo_debut"] <= cr) & (eq_t["dispo_fin"] > cr)]["effectif"].sum())
+            for cr in creneaux_alloc]
+    disponible["_creneaux"] = creneaux_alloc
 
     donnees = {
         "jours_court": JOURS_COURT,
@@ -112,6 +126,7 @@ def exporte():
             "couverture_figee": pct_figee,
             "couverture_ajustee": pct_ajustee,
             "lignes": ajustee.to_dict("records"),
+            "disponible": disponible,
         },
         "dimensionnement": {
             "niveaux": dimensionnement.drop_duplicates("niveau_pct")[
@@ -132,6 +147,7 @@ def exporte():
         "scenarios": {
             "synthese": synthese.to_dict("records"),
             "details": details.to_dict("records"),
+            "libelles": LIBELLES_SCENARIOS,
         },
         "historique_editions": historique_editions.to_dict("records"),
         "billetterie": billetterie.to_dict("records"),

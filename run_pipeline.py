@@ -86,7 +86,7 @@ def main():
     prog_totale = pd.concat([hist_programmation, prog.assign(annee=annee)],
                             ignore_index=True)
     df = prevision.prepare_donnees(affluence_totale, prog_totale, scenes)
-    previsions, metriques, importances = prevision.entraine(df, annee)
+    previsions, metriques, importances, modele = prevision.entraine(df, annee)
     print(f"    Modele retenu : {metriques['modele_retenu']}"
           f" (MAE {metriques['mae_retenue']:.1f} visiteurs, R2 {metriques['r2_retenu']:.3f})")
     print(f"    MAE lineaire : {metriques['mae_lineaire']:.1f}"
@@ -133,11 +133,13 @@ def main():
           f" {m_antic['correctes']} confirmees"
           f" (precision {m_antic['precision']:.0%}, rappel {m_antic['rappel']:.0%})")
 
-    print(f"=== 4/5 Allocation des ressources ({generateur.DATES[3]}) ===")
-    besoins_initiaux = optimisation.calcule_besoins(previsions)
+    print("=== 4/5 Allocation des ressources (3 jours) ===")
+    # Prevision operationnelle appliquee aux 3 jours (meme modele que le dimanche),
+    # puis allocation sur tout le festival.
+    previsions_3j = prevision.prevoit_operationnel(df, modele, annee)
+    besoins_initiaux = optimisation.calcule_besoins(previsions_3j)
     allocation_initiale = optimisation.optimise(besoins_initiaux, equipes)
-    anomalies_j3 = anomalies[anomalies["jour"] == 3]
-    besoins_ajustes = optimisation.calcule_besoins(previsions, anomalies_j3)
+    besoins_ajustes = optimisation.calcule_besoins(previsions_3j, anomalies)
     allocation_ajustee = optimisation.optimise(besoins_ajustes, equipes)
     figee = besoins_ajustes.merge(
         allocation_initiale[["jour", "creneau", "scene_id", "type", "alloue"]],
@@ -149,12 +151,16 @@ def main():
     print(f"    Couverture des besoins ajustes si allocation figee : {figee['couverture'].mean():.1%}")
     print(f"    Couverture des besoins ajustes apres reallocation : {allocation_ajustee['couverture'].mean():.1%}")
 
-    transport_flux, m_transport = optimisation.dimensionne_transport(visiteurs)
+    jour_charge = int(visiteurs.groupby("jour").size().idxmax())
+    transport_flux, m_transport = optimisation.dimensionne_transport(visiteurs, jour=jour_charge)
     print(f"    Transport : pic de departs {m_transport['pic_departs']} a la cloture"
           f" -> flotte ideale {m_transport['flotte_ideale']} navettes"
           f" ({m_transport['staff_ideal']} agents)")
 
-    dimensionnement = optimisation.analyse_dimensionnement(besoins_ajustes)
+    # Dimensionnement sur les besoins PREVUS (planification a partir de la prevision),
+    # pas sur les besoins gonfles par les anomalies : on recrute pour la prevision et on
+    # absorbe les incidents par reallocation, pas en sur-embauchant partout.
+    dimensionnement = optimisation.analyse_dimensionnement(besoins_initiaux)
     ideal = dimensionnement.drop_duplicates("type").set_index("type")["ideal"].to_dict()
     print(f"    Dimensionnement : effectif ideal par domaine {ideal}")
     for pct, g in dimensionnement.groupby("niveau_pct"):
@@ -188,6 +194,7 @@ def main():
         "pannes": resultat["pannes"],
         "injections_foule": resultat["injections"],
         "previsions": previsions,
+        "previsions_3j": previsions_3j[["jour", "creneau", "scene_id", "prevision"]],
         "metriques_prevision": metriques_df,
         "importances_variables": importances,
         "anticipation_alertes": alertes_anticipation,
