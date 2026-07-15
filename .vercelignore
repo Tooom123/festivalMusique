@@ -1,0 +1,16 @@
+# Le site est 100 % statique : seul site/ est deploye.
+# Le pipeline Python s'execute en local et commit site/donnees.js ;
+# il ne doit jamais tourner sur Vercel (sinon detection d'un projet Python).
+*.py
+requirements.txt
+allocation/
+anomaly_detection/
+data_generation/
+forecasting/
+scenario_simulation/
+dashboard/
+carte3d/
+docs/
+data/
+.venv/
+__pycache__/
