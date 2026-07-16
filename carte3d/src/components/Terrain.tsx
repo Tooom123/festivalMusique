@@ -84,6 +84,18 @@ export function Terrain({ onEntree }: { onEntree?: () => void }) {
       {/* Enceinte lumineuse (braise) qui souligne la forme irreguliere */}
       <Line points={ligne} color="#ff6a1e" transparent opacity={0.6} lineWidth={2} />
 
+      {/* Halo de cliquabilite, identique a celui des POI (voir POI.tsx) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ex, 0.08, ez]}>
+        <circleGeometry args={[7, 40]} />
+        <meshBasicMaterial
+          color="#ffd24a"
+          transparent
+          opacity={survoleEntree ? 0.42 : 0.28}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
       <group
         position={[ex, 0, ez]}
         onClick={(e) => { e.stopPropagation(); onEntree?.(); }}
@@ -106,7 +118,16 @@ export function Terrain({ onEntree }: { onEntree?: () => void }) {
           />
         </mesh>
         <Html position={[0, 7.2, 0]} center distanceFactor={90} zIndexRange={[10, 0]}>
-          <div className="c3d-etiquette c3d-etiquette-entree">Entrée · transport</div>
+          <div className="c3d-etiquette c3d-etiquette-entree" onClick={() => onEntree?.()}>
+            <span className="c3d-poi-picto" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                <line x1="6" y1="20" x2="6" y2="13" /><line x1="12" y1="20" x2="12" y2="5" />
+                <line x1="18" y1="20" x2="18" y2="10" />
+              </svg>
+            </span>
+            Entrée — Transport
+            <span className="c3d-poi-chevron" aria-hidden="true">›</span>
+          </div>
         </Html>
       </group>
     </group>

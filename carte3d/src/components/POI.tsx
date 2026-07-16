@@ -100,21 +100,36 @@ function Secours() {
   );
 }
 
-// Objets 3D des points d'interet, orientes vers l'esplanade, cliquables
-// (les stands ouvrent leur carte, comme sur la carte 2D).
+// Objets 3D des points d'interet. Ce sont les SEULS stands cliquables du site :
+// tous les autres (Installations.tsx) sont du decor. Pour qu'on les distingue
+// d'un coup d'oeil, chacun porte un halo lumineux pulsant au sol et un
+// pictogramme flottant, que le decor n'a pas.
 export function POI({ poi, onPoi }: { poi: Poi; onPoi: (p: Poi) => void }) {
   const [x, z] = monde(poi.x, poi.y);
   const rotationY = Math.atan2(PLAZA[0] - x, PLAZA[1] - z);
   const [survole, setSurvole] = useState(false);
   const refGroupe = useRef<THREE.Group>(null);
-  // Tous les POI ouvrent désormais une analyse thématique (stands → scénarios,
-  // toilettes → allocation, secours → anomalies), donc tous sont cliquables.
-  const cliquable = true;
+  const refHalo = useRef<THREE.Mesh>(null);
+  const refAnneau = useRef<THREE.Mesh>(null);
 
-  useFrame((_, dt) => {
+  useFrame((state, dt) => {
+    const t = state.clock.elapsedTime;
     if (refGroupe.current) {
       easing.damp(refGroupe.current.scale, "x", survole ? 1.07 : 1, 0.2, dt);
       refGroupe.current.scale.z = refGroupe.current.scale.y = refGroupe.current.scale.x;
+    }
+    // Halo qui respire, pour attirer l'oeil sans clignoter agressivement.
+    if (refHalo.current) {
+      const mat = refHalo.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = (survole ? 0.5 : 0.3) + 0.12 * Math.sin(t * 2);
+    }
+    // Anneau qui s'ecarte lentement : signal « ceci est un point d'analyse ».
+    if (refAnneau.current) {
+      const cycle = (t * 0.5) % 1;
+      const s = 1 + cycle * 0.8;
+      refAnneau.current.scale.set(s, s, s);
+      const mat = refAnneau.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = (1 - cycle) * (survole ? 0.8 : 0.5);
     }
   });
 
@@ -124,17 +139,55 @@ export function POI({ poi, onPoi }: { poi: Poi; onPoi: (p: Poi) => void }) {
   if (poi.type === "secourisme") objet = <Secours />;
 
   return (
-    <group position={[x, 0, z]} rotation={[0, rotationY, 0]}>
+    <group position={[x, 0, z]}>
+      {/* Halo au sol : disque plein + anneau qui pulse (repere de cliquabilite) */}
+      <mesh ref={refHalo} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.08, 0]}>
+        <circleGeometry args={[4.6, 36]} />
+        <meshBasicMaterial
+          color="#ffd24a"
+          transparent
+          opacity={0.3}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh ref={refAnneau} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
+        <ringGeometry args={[4.2, 4.8, 40]} />
+        <meshBasicMaterial
+          color="#ffe98a"
+          transparent
+          opacity={0.5}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
       <group
         ref={refGroupe}
+        rotation={[0, rotationY, 0]}
         onClick={(e) => { e.stopPropagation(); onPoi(poi); }}
-        onPointerOver={(e) => { e.stopPropagation(); setSurvole(true); document.body.style.cursor = cliquable ? "pointer" : "auto"; }}
+        onPointerOver={(e) => { e.stopPropagation(); setSurvole(true); document.body.style.cursor = "pointer"; }}
         onPointerOut={() => { setSurvole(false); document.body.style.cursor = "auto"; }}
       >
         {objet}
       </group>
-      <Html position={[0, 4.1, 0]} center distanceFactor={95} zIndexRange={[15, 0]}>
-        <div className="c3d-etiquette c3d-etiquette-poi">{poi.nom}</div>
+
+      <Html position={[0, 4.6, 0]} center distanceFactor={95} zIndexRange={[15, 0]}>
+        <div
+          className={"c3d-etiquette c3d-etiquette-poi c3d-poi-clic" + (survole ? " survol" : "")}
+          onClick={() => onPoi(poi)}
+          onPointerOver={() => { setSurvole(true); document.body.style.cursor = "pointer"; }}
+          onPointerOut={() => { setSurvole(false); document.body.style.cursor = "auto"; }}
+        >
+          <span className="c3d-poi-picto" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+              <line x1="6" y1="20" x2="6" y2="13" /><line x1="12" y1="20" x2="12" y2="5" />
+              <line x1="18" y1="20" x2="18" y2="10" />
+            </svg>
+          </span>
+          {poi.nom}
+          <span className="c3d-poi-chevron" aria-hidden="true">›</span>
+        </div>
       </Html>
     </group>
   );

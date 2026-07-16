@@ -63,8 +63,10 @@ export const SECURITE: Installation[] = [
 
 // Etiquettes de zone : reprennent les comptes affiches sur la page Allocation
 // (24 points de restauration, 30 blocs sanitaires, 6 postes de secours).
+// Placees a l'ecart des points d'analyse cliquables (points_interet) pour ne pas
+// se chevaucher : ce sont de simples reperes de decor, sans interaction.
 export const ZONES: Zone[] = [
-  { nom: "Restauration", x: 50, y: 15, compte: "~24 stands" },
-  { nom: "Sanitaires", x: 9, y: 65, compte: "~30 blocs" },
-  { nom: "Poste de secours", x: 76, y: 55, compte: "6 postes" },
+  { nom: "Restauration", x: 50, y: 14, compte: "~24 stands" },
+  { nom: "Sanitaires", x: 9, y: 70, compte: "~30 blocs" },
+  { nom: "Postes de secours", x: 24, y: 58, compte: "6 postes" },
 ];
