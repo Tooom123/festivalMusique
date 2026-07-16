@@ -220,27 +220,21 @@ body.drawer-ouvert #drawer {
   gap: 16px;
   align-content: start;
 }
-/* Chaque cellule de la grille peut retrecir sous sa largeur de contenu :
-   evite qu'un tableau/graphe large pousse la grille et cree un scroll horizontal. */
+/* Chaque cellule peut rétrécir sous la largeur de son contenu : évite qu'un
+   tableau/graphe large pousse la grille et crée un scroll horizontal. */
 .drawer-corps > * { min-width: 0; }
-/* Éléments pleine largeur dans la grille 2 colonnes du modal. */
-.drawer-corps > .bloc-hero,
-.drawer-corps > .bloc-txt,
-.drawer-corps > .titre-bloc,
-.drawer-corps > .sous-note,
-.drawer-corps > .segments,
-.drawer-corps > .grille-kpi,
-.drawer-corps > .headliners,
-.drawer-corps > #liste-recos,
-.drawer-corps > #dimensionnement-ideal,
-.drawer-corps > #transport-resume,
-.drawer-corps > #billetterie-panneau,
-.drawer-corps > #billetterie-panneau-t {
-  grid-column: 1 / -1;
-}
+
+/* Par DÉFAUT, tout occupe la pleine largeur du modal. Les graphiques et les
+   tableaux ont besoin de place : en demi-colonne (~420 px) leurs libellés se
+   replient et les tables débordent. On ne met côte à côte que ce qui est
+   explicitement marqué « compact » (KPI, petits résumés). */
+.drawer-corps > * { grid-column: 1 / -1; }
+.drawer-corps > .compact { grid-column: auto; }
+
 .drawer-corps > .carte-graph { margin-bottom: 0; }
 @media (max-width: 680px) {
   .drawer-corps { grid-template-columns: 1fr; }
+  .drawer-corps > .compact { grid-column: 1 / -1; }
 }
 .drawer-corps::-webkit-scrollbar { width: 8px; }
 .drawer-corps::-webkit-scrollbar-thumb { background: rgba(255, 122, 24, 0.28); border-radius: 4px; }
@@ -568,7 +562,41 @@ tr:hover td { background: var(--surface); }
 .c3d-scene-artiste::before { content: "\266A"; color: var(--braise); font-size: 12px; }
 .c3d-etiquette-scene.active { border-color: var(--braise); box-shadow: 0 0 0 1px var(--braise), 0 0 16px rgba(255, 122, 24, 0.5); }
 .c3d-etiquette-poi { font-size: 10.5px; padding: 2px 8px; color: var(--sourdine); }
-.c3d-etiquette-entree { color: var(--texte-2); font-size: 11px; }
+
+/* Etiquette d'un point d'analyse cliquable : pastille + pictogramme + chevron.
+   Le decor du site n'a aucune etiquette, la distinction est donc immediate. */
+.c3d-poi-clic,
+.c3d-etiquette-entree {
+  pointer-events: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  color: var(--texte);
+  background: rgba(24, 12, 8, 0.9);
+  border-color: var(--ambre);
+  box-shadow: 0 0 12px rgba(255, 210, 74, 0.35);
+  transition: background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+.c3d-poi-clic:hover,
+.c3d-poi-clic.survol,
+.c3d-etiquette-entree:hover {
+  background: rgba(255, 122, 24, 0.28);
+  box-shadow: 0 0 18px rgba(255, 210, 74, 0.6);
+  transform: translateY(-1px);
+}
+.c3d-poi-picto {
+  display: inline-flex;
+  width: 13px;
+  height: 13px;
+  color: var(--ambre);
+  flex: none;
+}
+.c3d-poi-picto svg { width: 100%; height: 100%; }
+.c3d-poi-chevron { color: var(--ambre); font-weight: 700; margin-left: 1px; }
 .c3d-zone {
   font-family: var(--police-texte);
   background: rgba(21, 11, 8, 0.5);

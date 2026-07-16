@@ -282,8 +282,9 @@ function dessineProgrammation(jour) {
     },
     grid: { left: 96, right: 24, top: 16, bottom: 34 },
     xAxis: {
-      type: "value", min: 16 * 60, max: 24 * 60, interval: 60,
-      axisLabel: { color: C.axe, formatter: (v) => heureTexte(v) },
+      type: "value", min: 16 * 60, max: 24 * 60, interval: 120,
+      axisLabel: { color: C.axe, fontSize: 10, hideOverlap: true,
+                   formatter: (v) => heureTexte(v) },
       splitLine: { lineStyle: { color: C.grille } }, axisLine: { show: false }, axisTick: { show: false },
     },
     yAxis: {
@@ -308,8 +309,8 @@ function dessineProgrammation(jour) {
           children: [
             { type: "rect", shape: { ...rect, r: 7 }, style: api.style({ stroke: "#08080d", lineWidth: 2 }) },
             { type: "text", style: { text: api.value(3), x: rect.x + rect.width / 2, y: rect.y + rect.height / 2,
-              align: "center", verticalAlign: "middle", fill: "#fff", fontSize: 12, fontWeight: 600,
-              overflow: "truncate", width: rect.width - 12 } },
+              align: "center", verticalAlign: "middle", fill: "#fff", fontSize: 10.5, fontWeight: 600,
+              overflow: "break", lineHeight: 12, width: rect.width - 6 } },
           ],
         };
       },
@@ -1090,7 +1091,9 @@ function initScenarios() {
     xAxis: { type: "category", data: noms, ...axesBase(),
       axisLabel: { color: C.axe, fontSize: 10.5, interval: 0, width: 110, overflow: "break" },
       splitLine: { show: false } },
-    yAxis: { type: "value", min: (v) => v.min - 0.002, max: (v) => v.max + 0.002,
+    yAxis: { type: "value", scale: true,
+      min: (v) => Math.floor((v.min - 0.002) * 1000) / 1000,
+      max: (v) => Math.ceil((v.max + 0.002) * 1000) / 1000,
       axisLabel: { color: C.axe, formatter: (v) => (v * 100).toFixed(1) + " %" }, ...axesBase() },
     series: [{ type: "scatter", symbolSize: 12,
       itemStyle: { color: "#ff9a3c", opacity: 0.85, borderColor: "rgba(255,255,255,0.4)", borderWidth: 1 },
