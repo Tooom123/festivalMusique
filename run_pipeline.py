@@ -6,7 +6,7 @@ import pandas as pd
 
 from allocation import optimisation
 from anomaly_detection import detection
-from data_generation import base, generateur, simulation
+from data_generation import base, generateur, simulation, validation
 from forecasting import prevision
 from scenario_simulation import scenarios
 
@@ -54,6 +54,13 @@ def main():
     for jour in (1, 2, 3):
         nb = int((visiteurs["jour"] == jour).sum())
         print(f"      {generateur.DATES[jour]} : {nb} visiteurs")
+
+    # Les modules ne travaillent que sur des donnees dont la coherence est verifiee.
+    controles = validation.valide(scenes, visiteurs, resultat["affluence"],
+                                  resultat["affluence_creneau"], resultat["evenements"])
+    print(f"    Invariants verifies ({len(controles)}/{len(controles)}) :")
+    for c in controles:
+        print(f"      OK {c}")
 
     print("=== 1b/5 Historique des editions 2022-2025 ===")
     hist_affluence = []
